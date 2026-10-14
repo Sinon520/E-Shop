@@ -519,6 +519,7 @@ public class OrderService {
         vo.setTotalAmount(order.getTotalAmount());
         vo.setPayAmount(order.getPayAmount());
         vo.setCreateTime(formatDateTime(order.getCreateTime()));
+        vo.setReceiverName(order.getReceiverName());
         vo.setItems(items.stream().map(this::toItemVO).toList());
         return vo;
     }

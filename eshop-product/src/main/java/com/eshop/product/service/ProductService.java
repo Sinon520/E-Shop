@@ -106,7 +106,21 @@ public class ProductService {
         if (spu == null || spu.getStatus() == null || spu.getStatus() != 1) {
             return null;
         }
+        return buildSpuDetail(spu);
+    }
 
+    /**
+     * 管理端：不限状态查询商品详情（含 SKU 明细；供后台 SKU 展开 / 编辑回填）
+     */
+    public SpuDetailVO loadSpuDetailForAdmin(Long spuId) {
+        Spu spu = spuMapper.selectById(spuId);
+        return spu == null ? null : buildSpuDetail(spu);
+    }
+
+    /**
+     * 组装商品详情 VO：分类/品牌名、specs 聚合、SKU 列表
+     */
+    public SpuDetailVO buildSpuDetail(Spu spu) {
         SpuDetailVO vo = new SpuDetailVO();
         vo.setId(spu.getId());
         vo.setName(spu.getName());
@@ -127,7 +141,7 @@ public class ProductService {
         }
 
         List<Sku> skus = skuMapper.selectList(new LambdaQueryWrapper<Sku>()
-                .eq(Sku::getSpuId, spuId)
+                .eq(Sku::getSpuId, spu.getId())
                 .orderByAsc(Sku::getId));
         vo.setSkus(skus.stream().map(this::toSkuVO).toList());
         vo.setSpecs(aggregateSpecs(skus));

@@ -26,5 +26,8 @@ public class OrderVO {
     /** yyyy-MM-dd HH:mm:ss */
     private String createTime;
 
+    /** 收货人姓名（快照；管理端列表展示） */
+    private String receiverName;
+
     private List<OrderItemVO> items;
 }

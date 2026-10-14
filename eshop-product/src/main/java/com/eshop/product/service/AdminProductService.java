@@ -17,6 +17,7 @@ import com.eshop.product.mapper.CategoryMapper;
 import com.eshop.product.mapper.SkuMapper;
 import com.eshop.product.mapper.SpuMapper;
 import com.eshop.product.vo.AdminSpuVO;
+import com.eshop.product.vo.SpuDetailVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -44,6 +45,18 @@ public class AdminProductService {
     private final SkuMapper skuMapper;
     private final CategoryMapper categoryMapper;
     private final ProductCacheService productCacheService;
+    private final ProductService productService;
+
+    /**
+     * 商品详情（含 SKU 明细，不限状态；供管理端 SKU 展开 / 编辑回填）
+     */
+    public SpuDetailVO spuDetail(Long spuId) {
+        SpuDetailVO vo = productService.loadSpuDetailForAdmin(spuId);
+        if (vo == null) {
+            throw new BizException(ResultCode.PRODUCT_NOT_FOUND);
+        }
+        return vo;
+    }
 
     // ==================== SPU ====================
 

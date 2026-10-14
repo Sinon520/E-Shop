@@ -6,6 +6,7 @@ import com.eshop.product.dto.SpuSaveRequest;
 import com.eshop.product.dto.SpuStatusRequest;
 import com.eshop.product.service.AdminProductService;
 import com.eshop.product.vo.AdminSpuVO;
+import com.eshop.product.vo.SpuDetailVO;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,12 @@ public class AdminSpuController {
                                                @RequestParam(required = false) Long categoryId,
                                                @RequestParam(required = false) Integer status) {
         return Result.success(adminProductService.spuPage(page, size, keyword, categoryId, status));
+    }
+
+    /** 商品详情（含 SKU 明细，不限状态） */
+    @GetMapping("/{id:\\d+}")
+    public Result<SpuDetailVO> detail(@PathVariable Long id) {
+        return Result.success(adminProductService.spuDetail(id));
     }
 
     /** 上架 / 下架 */
