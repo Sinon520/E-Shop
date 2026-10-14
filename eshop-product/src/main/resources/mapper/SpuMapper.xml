@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.eshop.product.mapper.SpuMapper">
+
+    <!--
+      商品列表分页查询
+      price / market_price 口径：取"该 SPU 下最低售价且在架 SKU"的价格——
+      先用窗口函数（MySQL 8）为每个 SPU 选出价格最低的一行，再与 t_spu 内联；
+      这样列表排序（priceAsc / priceDesc）与卡片上展示的价格完全同源。
+      t_spu / t_sku 的 deleted 条件手写（自定义 SQL 不经过 MyBatis-Plus 逻辑删除拼接）。
+    -->
+    <select id="selectSpuPage" resultType="com.eshop.product.vo.SpuListItemVO">
+        SELECT s.id,
+               s.name,
+               s.main_image,
+               s.category_id,
+               s.sales,
+               p.price,
+               p.market_price
+        FROM t_spu s
+        INNER JOIN (
+            SELECT spu_id, price, market_price
+            FROM (
+                SELECT spu_id,
+                       price,
+                       market_price,
+                       ROW_NUMBER() OVER (PARTITION BY spu_id ORDER BY price ASC, id ASC) AS rn
+                FROM t_sku
+                WHERE deleted = 0
+                  AND status = 1
+            ) lowest
+            WHERE lowest.rn = 1
+        ) p ON p.spu_id = s.id
+        WHERE s.deleted = 0
+          AND s.status = 1
+        <if test="categoryId != null">
+            AND s.category_id = #{categoryId}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND s.name LIKE CONCAT('%', #{keyword}, '%')
+        </if>
+        <choose>
+            <when test="sort == 'sales'">ORDER BY s.sales DESC, s.id DESC</when>
+            <when test="sort == 'priceAsc'">ORDER BY p.price ASC, s.id DESC</when>
+            <when test="sort == 'priceDesc'">ORDER BY p.price DESC, s.id DESC</when>
+            <otherwise>ORDER BY s.id DESC</otherwise>
+        </choose>
+    </select>
+
+</mapper>

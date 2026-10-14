@@ -1,0 +1,68 @@
+server:
+  port: 9000
+
+spring:
+  application:
+    name: eshop-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+    gateway:
+      # 跨域：前端（Vite dev server）经网关访问时的统一配置
+      globalcors:
+        add-to-simple-url-handler-mapping: true
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+      routes:
+        - id: eshop-user
+          uri: lb://eshop-user
+          predicates:
+            - Path=/api/user/**
+          filters:
+            - StripPrefix=2
+        - id: eshop-product
+          uri: lb://eshop-product
+          predicates:
+            - Path=/api/product/**
+          filters:
+            - StripPrefix=2
+        - id: eshop-stock
+          uri: lb://eshop-stock
+          predicates:
+            - Path=/api/stock/**
+          filters:
+            - StripPrefix=2
+        - id: eshop-cart
+          uri: lb://eshop-cart
+          predicates:
+            - Path=/api/cart/**
+          filters:
+            - StripPrefix=2
+        - id: eshop-order
+          uri: lb://eshop-order
+          predicates:
+            - Path=/api/order/**
+          filters:
+            - StripPrefix=2
+        - id: eshop-pay
+          uri: lb://eshop-pay
+          predicates:
+            - Path=/api/pay/**
+          filters:
+            - StripPrefix=2
+
+eshop:
+  jwt:
+    # 与 eshop-user 保持一致（HS256 ≥ 32 字节）；生产移入配置中心并更换
+    secret: eshop-2026-dev-only-jwt-secret-key-ChangeMeInProduction!
+
+logging:
+  level:
+    com.eshop: debug
+    org.springframework.cloud.gateway: info
