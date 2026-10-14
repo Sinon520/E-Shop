@@ -40,6 +40,21 @@
             <groupId>com.eshop</groupId>
             <artifactId>eshop-common</artifactId>
         </dependency>
+        <!-- RocketMQ：下单后发延迟消息，到期未支付 → 超时关单 + 回补库存（P2 技术亮点） -->
+        <dependency>
+            <groupId>org.apache.rocketmq</groupId>
+            <artifactId>rocketmq-spring-boot-starter</artifactId>
+        </dependency>
+        <!-- Seata AT：「创建订单 + 锁定库存」收敛为全局事务（P2 技术亮点） -->
+        <dependency>
+            <groupId>org.apache.seata</groupId>
+            <artifactId>seata-spring-boot-starter</artifactId>
+        </dependency>
+        <!-- Sentinel：Feign 调用熔断降级（P2 技术亮点） -->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>

@@ -27,6 +27,16 @@
             <groupId>com.eshop</groupId>
             <artifactId>eshop-common</artifactId>
         </dependency>
+        <!-- Seata AT：库存锁定作为 RM 参与下单全局事务（P2 技术亮点；undo_log 在 shop_stock 库） -->
+        <dependency>
+            <groupId>org.apache.seata</groupId>
+            <artifactId>seata-spring-boot-starter</artifactId>
+        </dependency>
+        <!-- Redis：库存 Lua 原子预扣（防超卖第一层，抗并发入口；P2 技术亮点） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>

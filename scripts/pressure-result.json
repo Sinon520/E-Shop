@@ -1,0 +1,35 @@
+{
+  "target": "http://127.0.0.1:9000/api/order/create",
+  "skuId": 103,
+  "concurrency": 30,
+  "durationSec": 20,
+  "total": 40419,
+  "ok": 0,
+  "soldOut3002": 60,
+  "blocked429": 40359,
+  "otherBiz": {},
+  "httpFail": 0,
+  "networkError": 0,
+  "rps": 2020.65,
+  "latencyMs": {
+    "all": {
+      "avg": 14.79,
+      "p50": 12.36,
+      "p95": 26.08,
+      "p99": 50.53,
+      "max": 565.52
+    },
+    "ok": {
+      "avg": 0,
+      "p95": 0
+    },
+    "soldOut": {
+      "avg": 162.58,
+      "p95": 288.4
+    },
+    "blocked429": {
+      "avg": 14.57,
+      "p95": 25.84
+    }
+  }
+}

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.eshop.common.dto.StockOpRequest;
 import com.eshop.common.exception.BizException;
 import com.eshop.common.result.ResultCode;
+import com.eshop.stock.cache.StockRedisGate;
 import com.eshop.stock.entity.Stock;
 import com.eshop.stock.entity.StockLog;
 import com.eshop.stock.mapper.StockLogMapper;
@@ -16,16 +17,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 库存服务：查询 + 内部操作（锁定 / 确认扣减 / 回补）
  * <p>
- * 一致性设计（P1 版）：
- * - 并发控制：乐观锁（version 字段，WHERE version = ? AND available >= ?）；
+ * 一致性设计（P2 双层防超卖 + 全局事务）：
+ * - 第一层（抗并发入口）：Redis Lua 原子预扣（{@link StockRedisGate}），热点流量在闸门处拦截/放行；
+ * - 第二层（最终账本）：DB 乐观锁（version 字段，WHERE version = ? AND available >= ?），绝对不超卖；
  * - 幂等：库存流水 (order_no, sku_id, type) 去重，重复请求直接跳过；
- * - 原子性：单次调用内多 SKU 操作用本地事务收敛，任一项失败整体回滚；
- * - P2 规划：Redis Lua 预扣抗并发热点 + Seata AT 收敛「订单-库存」跨服务事务。
+ * - 原子性：单次调用内多 SKU 用本地事务收敛（失败时补偿回滚已成功的 Redis 预扣）；
+ * - 跨服务：锁定 / 回补经 Seata AT 参与订单全局事务（undo_log 兜底回滚）。
  */
 @Slf4j
 @Service
@@ -37,6 +42,7 @@ public class StockService {
 
     private final StockMapper stockMapper;
     private final StockLogMapper stockLogMapper;
+    private final StockRedisGate stockRedisGate;
 
     /**
      * 查询 SKU 可用库存；无库存记录视为 SKU 不存在（3001）
@@ -51,16 +57,38 @@ public class StockService {
 
     /**
      * 锁定库存：available -= n，locked += n（幂等；库存不足抛 3002）
+     * <p>
+     * 双层防超卖：先 Redis Lua 原子预扣（第一层闸门），再 DB 乐观锁扣减（第二层账本）；
+     * 任一环节失败 → DB 由事务回滚、Redis 预扣补偿回滚，两侧收敛。
      */
     @Transactional(rollbackFor = Exception.class)
     public void lock(StockOpRequest request) {
         validate(request);
-        for (StockOpRequest.Item item : request.getItems()) {
-            if (logExists(request.getOrderNo(), item.getSkuId(), StockLog.TYPE_LOCK)) {
-                log.info("库存锁定已存在，跳过: orderNo={}, skuId={}", request.getOrderNo(), item.getSkuId());
-                continue;
+        List<StockOpRequest.Item> deducted = new ArrayList<>();
+        try {
+            for (StockOpRequest.Item item : request.getItems()) {
+                if (logExists(request.getOrderNo(), item.getSkuId(), StockLog.TYPE_LOCK)) {
+                    log.info("库存锁定已存在，跳过: orderNo={}, skuId={}", request.getOrderNo(), item.getSkuId());
+                    continue;
+                }
+                // ① 第一层：Redis Lua 原子预扣（抗并发入口；余量不足直接拒绝，不打 DB）
+                StockRedisGate.DeductResult result = stockRedisGate.deduct(item.getSkuId(), item.getQuantity());
+                if (result == StockRedisGate.DeductResult.INSUFFICIENT) {
+                    throw new BizException(ResultCode.STOCK_INSUFFICIENT);
+                }
+                if (result == StockRedisGate.DeductResult.SUCCESS) {
+                    deducted.add(item);
+                }
+                // BYPASS（未预热 / Redis 异常）→ 降级放行，由第二层 DB 兜底
+                // ② 第二层：DB 乐观锁扣减（最终账本）
+                lockOne(request.getOrderNo(), item);
             }
-            lockOne(request.getOrderNo(), item);
+        } catch (Exception e) {
+            // DB 由本地事务 / Seata 全局事务回滚；Redis 预扣在此补偿回滚（best-effort）
+            for (StockOpRequest.Item item : deducted) {
+                stockRedisGate.increase(item.getSkuId(), item.getQuantity());
+            }
+            throw e;
         }
     }
 
@@ -163,6 +191,38 @@ public class StockService {
                 .ge(Stock::getLocked, quantity));
         insertLog(orderNo, skuId, StockLog.TYPE_RESTORE, quantity,
                 stock.getAvailable(), stock.getAvailable() + quantity, "回补库存");
+        // 同步恢复 Redis 可售余量（best-effort；重复调用被上方流水去重拦截，不会重复加回）
+        stockRedisGate.increase(skuId, quantity);
+    }
+
+    // ==================== Redis 预热 / 核对 ====================
+
+    /**
+     * Redis 库存预热：以 DB 为准全量重建（启动时自动执行；同时承担对账校准职责——
+     * Seata 全局回滚等不经过本服务的路径造成的短暂漂移，在此收敛）
+     */
+    public String preheatRedis() {
+        List<Stock> stocks = stockMapper.selectList(null);
+        for (Stock stock : stocks) {
+            stockRedisGate.sync(stock.getSkuId(), stock.getAvailable());
+        }
+        String summary = "Redis 库存预热完成：" + stocks.size() + " 个 SKU";
+        log.info("[库存] {}", summary);
+        return summary;
+    }
+
+    /**
+     * 核对某 SKU 的 Redis 预扣值与 DB 账本（内部接口用）
+     */
+    public Map<String, Object> inspectRedis(Long skuId) {
+        Stock stock = requireStock(skuId);
+        Long redisValue = stockRedisGate.get(skuId);
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("skuId", skuId);
+        map.put("dbAvailable", stock.getAvailable());
+        map.put("redisValue", redisValue);
+        map.put("consistent", redisValue != null && redisValue.intValue() == stock.getAvailable());
+        return map;
     }
 
     // ==================== 内部工具 ====================

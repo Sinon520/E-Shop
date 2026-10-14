@@ -8,8 +8,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 /**
  * 库存服务内部接口客户端（锁定 / 确认 / 回补，全部按订单号幂等）
+ * <p>
+ * 熔断降级：feign.sentinel.enabled=true + fallbackFactory；
+ * 资源名（Sentinel 约定）= POST:http://eshop-stock/internal/stock/lock（等），
+ * 熔断规则见 {@link com.eshop.order.config.SentinelDegradeConfig}。
  */
-@FeignClient(name = "eshop-stock", path = "/internal/stock", contextId = "orderStockClient")
+@FeignClient(name = "eshop-stock", path = "/internal/stock", contextId = "orderStockClient",
+        fallbackFactory = StockClientFallbackFactory.class)
 public interface StockClient {
 
     /** 锁定库存（下单） */

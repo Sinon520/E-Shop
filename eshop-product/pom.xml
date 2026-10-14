@@ -27,6 +27,11 @@
             <groupId>com.eshop</groupId>
             <artifactId>eshop-common</artifactId>
         </dependency>
+        <!-- Redisson：商品缓存（读写/互斥锁重建/布隆过滤器/延迟双删队列） -->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>

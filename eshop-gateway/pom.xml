@@ -28,6 +28,15 @@
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-loadbalancer</artifactId>
         </dependency>
+        <!-- Sentinel 网关限流（P2 技术亮点：下单接口 QPS 限流 + 统一 429 响应） -->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-alibaba-sentinel-gateway</artifactId>
+        </dependency>
         <!-- JWT 校验（网关侧独立实现，不依赖 eshop-common，见工程约定） -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

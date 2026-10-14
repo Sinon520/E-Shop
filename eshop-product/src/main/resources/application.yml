@@ -13,6 +13,23 @@ spring:
     url: jdbc:mysql://127.0.0.1:3306/shop_product?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: root
     password: 123456
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      database: 0
+
+# 商品缓存参数（P2 技术亮点：缓存三件套 + Cache Aside + 延迟双删）
+eshop:
+  cache:
+    spu-detail-ttl-seconds: 1800        # 商品详情基础 TTL（30 分钟）
+    spu-detail-jitter-seconds: 300      # TTL 随机抖动上限（防雪崩：1800 + 0~300s）
+    category-ttl-seconds: 3600          # 分类列表基础 TTL（1 小时）
+    null-value-ttl-seconds: 120         # 空值缓存 TTL（防穿透）
+    lock-wait-millis: 500               # 互斥锁重建：tryLock 等待上限
+    lock-lease-millis: 10000            # 互斥锁重建：锁租约（防死锁）
+    double-delete-delay-millis: 2000     # 延迟双删：第二次删除的延迟（生产常用 0.5~1s；本地留有充裕观察窗口）
+    preheat-enabled: true               # 启动时预热（布隆过滤器 + 详情缓存）
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml

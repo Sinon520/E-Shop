@@ -1,0 +1,101 @@
+{
+  "info": {
+    "_postman_id": "eshop-p2-pressure-2026",
+    "name": "E-Shop P2 压测（不超卖 + 限流）",
+    "description": "E-Shop 求职作品集 · P2-6 压测集合\n\n使用顺序：\n1. 先手工跑一次「1-登录」（token 自动存入集合变量 token）\n2. 手工跑一次「2-下单」确认 code=200\n3. 对「2-下单」跑性能测试：并发 30 / 约 20 秒\n\n压测目标：sku103（库存基线 50 件）\n期望现象：前 50 单成功（code=200）；售罄后快速返回 code=3002（Redis 预扣闸门直接拒绝）；绝不超卖。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://127.0.0.1:9000", "type": "string" },
+    { "key": "skuId", "value": "103", "type": "string" },
+    { "key": "addressId", "value": "14", "type": "string" },
+    { "key": "token", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "1-登录（先跑一次，自动存 token）",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var j = pm.response.json();",
+              "if (j.code === 200 && j.data && j.data.token) {",
+              "  pm.collectionVariables.set('token', j.data.token);",
+              "  console.log('token 已写入集合变量');",
+              "}",
+              "pm.test('登录成功', function () { pm.expect(j.code).to.eql(200); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"sinon\",\n  \"password\": \"123456\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/user/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "user", "auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "2-下单（压测目标 ★）",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"addressId\": {{addressId}},\n  \"remark\": \"压测-apifox\",\n  \"items\": [\n    { \"skuId\": {{skuId}}, \"quantity\": 1 }\n  ]\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/order/create",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "order", "create"]
+        }
+      }
+    },
+    {
+      "name": "3-查库存（观测用）",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/stock/{{skuId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "stock", "{{skuId}}"]
+        }
+      }
+    },
+    {
+      "name": "4-查我的订单（观测用）",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/order/page?page=1&size=5",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "order", "page"],
+          "query": [
+            { "key": "page", "value": "1" },
+            { "key": "size", "value": "5" }
+          ]
+        }
+      }
+    }
+  ]
+}

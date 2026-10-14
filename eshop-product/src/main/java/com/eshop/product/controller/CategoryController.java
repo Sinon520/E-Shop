@@ -1,7 +1,7 @@
 package com.eshop.product.controller;
 
 import com.eshop.common.result.Result;
-import com.eshop.product.service.ProductService;
+import com.eshop.product.cache.ProductCacheService;
 import com.eshop.product.vo.CategoryVO;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -18,11 +18,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CategoryController {
 
-    private final ProductService productService;
+    private final ProductCacheService productCacheService;
 
-    /** 分类列表 */
+    /** 分类列表（带缓存） */
     @GetMapping("/categories")
     public Result<List<CategoryVO>> list() {
-        return Result.success(productService.listCategories());
+        return Result.success(productCacheService.getCategories());
     }
 }

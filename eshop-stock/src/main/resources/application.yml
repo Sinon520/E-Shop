@@ -13,6 +13,11 @@ spring:
     url: jdbc:mysql://127.0.0.1:3306/shop_stock?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: root
     password: 123456
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      database: 0
 
 mybatis-plus:
   configuration:
@@ -32,3 +37,20 @@ knife4j:
 logging:
   level:
     com.eshop: debug
+
+# Seata AT 全局事务（P2）：作为 RM 参与下单全局事务（分支注册 + undo_log 回滚）；
+# 未发生全局事务上下文时（如超时关单的回补调用），仅走普通本地事务，无副作用
+seata:
+  enabled: true
+  tx-service-group: eshop_tx_group
+  service:
+    vgroup-mapping:
+      eshop_tx_group: default
+  registry:
+    type: nacos
+    nacos:
+      application: seata-server
+      server-addr: 127.0.0.1:8848
+      group: SEATA_GROUP
+      username: nacos
+      password: nacos

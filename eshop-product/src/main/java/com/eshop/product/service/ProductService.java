@@ -4,9 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.eshop.common.dto.SkuInfoDTO;
-import com.eshop.common.exception.BizException;
 import com.eshop.common.result.PageResult;
-import com.eshop.common.result.ResultCode;
 import com.eshop.product.entity.Brand;
 import com.eshop.product.entity.Category;
 import com.eshop.product.entity.Sku;
@@ -86,12 +84,27 @@ public class ProductService {
     }
 
     /**
-     * 商品详情：含分类/品牌名、specs 聚合、SKU 列表；下架或不存在抛 2001
+     * 上架 SPU 的 id 列表（缓存预热：布隆过滤器重建 + 详情缓存兜底）
      */
-    public SpuDetailVO getSpuDetail(Long spuId) {
+    public List<Long> listOnlineSpuIds() {
+        return spuMapper.selectList(new LambdaQueryWrapper<Spu>()
+                        .eq(Spu::getStatus, 1)
+                        .select(Spu::getId))
+                .stream()
+                .map(Spu::getId)
+                .toList();
+    }
+
+    /**
+     * 从 DB 加载商品详情：含分类/品牌名、specs 聚合、SKU 列表
+     * <p>
+     * 供缓存层回源调用：返回 null 表示商品不存在或已下架，
+     * 由 {@link com.eshop.product.cache.ProductCacheService} 统一转换为 2001 错误码。
+     */
+    public SpuDetailVO loadSpuDetail(Long spuId) {
         Spu spu = spuMapper.selectById(spuId);
         if (spu == null || spu.getStatus() == null || spu.getStatus() != 1) {
-            throw new BizException(ResultCode.PRODUCT_NOT_FOUND);
+            return null;
         }
 
         SpuDetailVO vo = new SpuDetailVO();
@@ -138,7 +151,7 @@ public class ProductService {
         }
 
         Set<Long> spuIds = skus.stream().map(Sku::getSpuId).collect(Collectors.toSet());
-        Map<Long, Spu> spuMap = spuMapper.selectBatchIds(spuIds).stream()
+        Map<Long, Spu> spuMap = spuMapper.selectByIds(spuIds).stream()
                 .collect(Collectors.toMap(Spu::getId, spu -> spu));
 
         return skus.stream().map(sku -> {
@@ -167,7 +180,7 @@ public class ProductService {
         if (categoryIds.isEmpty()) {
             return;
         }
-        Map<Long, String> nameMap = categoryMapper.selectBatchIds(categoryIds).stream()
+        Map<Long, String> nameMap = categoryMapper.selectByIds(categoryIds).stream()
                 .collect(Collectors.toMap(Category::getId, Category::getName));
         list.forEach(vo -> vo.setCategoryName(nameMap.getOrDefault(vo.getCategoryId(), "")));
     }

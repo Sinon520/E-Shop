@@ -25,10 +25,12 @@ import com.eshop.order.entity.OrderLog;
 import com.eshop.order.mapper.OrderItemMapper;
 import com.eshop.order.mapper.OrderLogMapper;
 import com.eshop.order.mapper.OrderMapper;
+import com.eshop.order.mq.OrderTimeoutProducer;
 import com.eshop.order.vo.OrderCreateVO;
 import com.eshop.order.vo.OrderDetailVO;
 import com.eshop.order.vo.OrderItemVO;
 import com.eshop.order.vo.OrderVO;
+import io.seata.spring.annotation.GlobalTransactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -50,11 +52,11 @@ import java.util.stream.Collectors;
 /**
  * 订单服务：下单 / 列表 / 详情 / 取消 + 内部状态流转
  * <p>
- * P1 一致性策略（先跑通，P2 引入亮点）：
- * - 落库（主单 + 明细 + 日志）用本地事务（TransactionTemplate）；
+ * 一致性策略（P2 已升级）：
+ * - 下单 = Seata AT 全局事务：[订单落库（order 库分支）] + [锁定库存（stock 库分支）]，
+ *   任一步失败整体回滚（undo_log 反向 SQL 撤销），不再需要手工补偿；
  * - 状态流转用 CAS（WHERE status = 当前值）防并发重复流转；
- * - 「订单 - 库存」跨服务用「先提交 + 失败补偿」：锁库存失败 → 订单置取消 + 尽力回补；
- *   P2 将用 Seata AT 收敛为全局事务。
+ * - 超时关单 / 支付回调等异步链路走「MQ + 幂等」最终一致。
  */
 @Slf4j
 @Service
@@ -77,12 +79,17 @@ public class OrderService {
     private final UserClient userClient;
     private final CartClient cartClient;
     private final TransactionTemplate transactionTemplate;
+    private final OrderTimeoutProducer orderTimeoutProducer;
 
     // ==================== 用户侧 ====================
 
     /**
      * 创建订单：地址快照 + 商品快照（服务端现价）→ 落库 → 锁库存 → 清理购物车
+     * <p>
+     * Seata AT 全局事务：订单落库与库存锁定跨库原子化——锁库存失败/异常时全局回滚，
+     * 订单落库（含明细、状态日志）作为分支被 undo 撤销，数据库不留半成品订单。
      */
+    @GlobalTransactional(timeoutMills = 60000, name = "create-order")
     public OrderCreateVO create(Long userId, OrderCreateRequest request) {
         // 同 SKU 合并累加
         LinkedHashMap<Long, Integer> merged = new LinkedHashMap<>();
@@ -141,16 +148,24 @@ public class OrderService {
                     OrderStatus.OPERATOR_SYSTEM, 0L, "创建订单");
         });
 
-        // 锁定库存：失败则撤销订单并尽力回补
+        // 锁定库存（Seata 分支二：stock 库，XID 经 Feign 头传播）
+        // 失败直接上抛 → 全局事务回滚（订单落库一并撤销），无需手工补偿
         StockOpRequest stockOp = buildStockOp(orderNo, merged);
         try {
             ResultHelper.unwrap(stockClient.lock(stockOp));
+        } catch (BizException e) {
+            throw e;
         } catch (Exception e) {
-            handleLockFailure(order, stockOp);
-            if (e instanceof BizException bizException) {
-                throw bizException;
-            }
+            log.error("调用库存服务失败", e);
             throw new BizException("下单失败：库存服务暂不可用，请稍后重试");
+        }
+
+        // 发送超时关单延迟消息（P2）：到期未支付 → 自动关闭 + 回补库存
+        // 发送失败不阻断下单（订单仍可支付/手动取消），仅留错误日志；生产级可加「本地消息表 + 定时补偿」
+        try {
+            orderTimeoutProducer.send(orderNo);
+        } catch (Exception e) {
+            log.error("超时关单消息发送失败（订单不受影响）: orderNo={}", orderNo, e);
         }
 
         // 清理购物车中已下单条目（尽力而为，不影响下单结果）
@@ -258,6 +273,45 @@ public class OrderService {
         log.info("订单支付完成: orderNo={}", orderNo);
     }
 
+    // ==================== MQ 超时关单（P2） ====================
+
+    /**
+     * 超时关单：RocketMQ 延迟消息到期触发（幂等）
+     * <p>
+     * - 订单仍为「待支付」→ CAS 0→5（超时关闭）+ 回补库存；
+     * - 已支付 / 已取消 / 已关闭 → 静默跳过（消息重复投递、消费重试均安全）；
+     * - 系统异常上抛 → 交由 RocketMQ 消费重试（重试进入本方法后仍先校验状态，天然幂等）。
+     */
+    public void handleTimeout(String orderNo) {
+        Order order = orderMapper.selectOne(new LambdaQueryWrapper<Order>()
+                .eq(Order::getOrderNo, orderNo));
+        if (order == null) {
+            log.warn("超时关单：订单不存在，忽略: orderNo={}", orderNo);
+            return;
+        }
+        if (order.getStatus() != OrderStatus.PENDING_PAY) {
+            log.info("超时关单：订单非待支付状态，忽略: orderNo={}, status={}", orderNo, order.getStatus());
+            return;
+        }
+        try {
+            transactStatus(order, OrderStatus.CLOSED, OrderStatus.OPERATOR_SYSTEM, 0L,
+                    "超时未支付，系统自动关闭", true);
+        } catch (BizException e) {
+            // CAS 失败：并发下订单刚被支付/取消，幂等跳过
+            log.info("超时关单：状态已被并发流转，忽略: orderNo={}", orderNo);
+            return;
+        }
+
+        // 回补库存（库存侧按 (order_no,sku_id,type) 流水幂等；失败留痕待补偿）
+        StockOpRequest stockOp = buildStockOp(orderNo, listItems(orderNo));
+        try {
+            ResultHelper.unwrap(stockClient.restore(stockOp));
+        } catch (Exception e) {
+            log.error("超时关单回补库存失败，待补偿: orderNo={}", orderNo, e);
+        }
+        log.info("订单超时关闭完成: orderNo={}", orderNo);
+    }
+
     // ==================== 内部工具 ====================
 
     /**
@@ -284,21 +338,6 @@ public class OrderService {
             insertLog(order.getOrderNo(), fromStatus, toStatus, operatorType, operatorId, remark);
         });
         order.setStatus(toStatus);
-    }
-
-    /** 锁库存失败：撤销订单 + 尽力回补（两个动作都尽力执行并留痕） */
-    private void handleLockFailure(Order order, StockOpRequest stockOp) {
-        try {
-            transactStatus(order, OrderStatus.CANCELLED, OrderStatus.OPERATOR_SYSTEM,
-                    0L, "锁定库存失败，自动取消", true);
-        } catch (Exception e) {
-            log.error("锁定失败后撤销订单异常: orderNo={}", order.getOrderNo(), e);
-        }
-        try {
-            ResultHelper.unwrap(stockClient.restore(stockOp));
-        } catch (Exception e) {
-            log.error("锁定失败后回补库存异常: orderNo={}", order.getOrderNo(), e);
-        }
     }
 
     private void confirmStockQuietly(String orderNo) {
