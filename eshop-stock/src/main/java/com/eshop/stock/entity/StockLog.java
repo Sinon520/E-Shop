@@ -25,6 +25,9 @@ public class StockLog {
     /** 类型：回补 */
     public static final int TYPE_RESTORE = 3;
 
+    /** 类型：管理员调整（P3） */
+    public static final int TYPE_ADJUST = 4;
+
     @TableId(type = IdType.AUTO)
     private Long id;
 
@@ -32,7 +35,7 @@ public class StockLog {
 
     private String orderNo;
 
-    /** 类型：1 锁定 / 2 确认扣减 / 3 回补 */
+    /** 类型：1 锁定 / 2 确认扣减 / 3 回补 / 4 管理员调整 */
     private Integer type;
 
     private Integer quantity;

@@ -201,8 +201,12 @@ public class OrderService {
 
     /** 订单详情（归属校验） */
     public OrderDetailVO detail(Long userId, String orderNo) {
-        Order order = requireOwned(userId, orderNo);
-        List<OrderItem> items = listItems(orderNo);
+        return buildDetail(requireOwned(userId, orderNo));
+    }
+
+    /** 组装详情 VO（C 端与管理端共用） */
+    private OrderDetailVO buildDetail(Order order) {
+        List<OrderItem> items = listItems(order.getOrderNo());
 
         OrderDetailVO vo = new OrderDetailVO();
         vo.setOrderNo(order.getOrderNo());
@@ -310,6 +314,43 @@ public class OrderService {
             log.error("超时关单回补库存失败，待补偿: orderNo={}", orderNo, e);
         }
         log.info("订单超时关闭完成: orderNo={}", orderNo);
+    }
+
+    // ==================== 管理端（P3） ====================
+
+    /** 管理端订单分页（全量，不限用户；状态 / 订单号 可选筛选） */
+    public PageResult<OrderVO> adminPage(long page, long size, Integer status, String keyword) {
+        long safePage = Math.max(page, 1);
+        long safeSize = Math.min(Math.max(size, 1), 100);
+        String kw = StringUtils.hasText(keyword) ? keyword.trim() : null;
+
+        IPage<Order> result = orderMapper.selectPage(new Page<>(safePage, safeSize),
+                new LambdaQueryWrapper<Order>()
+                        .eq(status != null, Order::getStatus, status)
+                        .like(kw != null, Order::getOrderNo, kw)
+                        .orderByDesc(Order::getId));
+        List<Order> orders = result.getRecords();
+        Map<String, List<OrderItem>> itemsMap = loadItemsMap(orders.stream().map(Order::getOrderNo).toList());
+        List<OrderVO> list = orders.stream()
+                .map(order -> toListVO(order, itemsMap.getOrDefault(order.getOrderNo(), List.of())))
+                .toList();
+        return PageResult.of(result.getTotal(), safePage, safeSize, list);
+    }
+
+    /** 管理端订单详情（不限归属） */
+    public OrderDetailVO adminDetail(String orderNo) {
+        return buildDetail(requireByNo(orderNo));
+    }
+
+    /** 发货：已支付(1) → 已发货(2)，管理员操作 */
+    public void ship(String orderNo, Long adminId) {
+        Order order = requireByNo(orderNo);
+        if (order.getStatus() != OrderStatus.PAID) {
+            throw new BizException(ResultCode.ORDER_STATUS_ILLEGAL);
+        }
+        transactStatus(order, OrderStatus.SHIPPED, OrderStatus.OPERATOR_ADMIN,
+                adminId == null ? 0L : adminId, "商家发货", false);
+        log.info("订单发货: orderNo={}, adminId={}", orderNo, adminId);
     }
 
     // ==================== 内部工具 ====================

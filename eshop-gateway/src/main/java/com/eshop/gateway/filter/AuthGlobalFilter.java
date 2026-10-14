@@ -1,6 +1,7 @@
 package com.eshop.gateway.filter;
 
 import com.eshop.gateway.support.JwtVerifier;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -38,6 +39,18 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
     private static final String UNAUTHORIZED_BODY =
             "{\"code\":401,\"message\":\"暂未登录或登录已过期\",\"data\":null}";
+
+    private static final String FORBIDDEN_BODY =
+            "{\"code\":403,\"message\":\"无管理员权限\",\"data\":null}";
+
+    /** 管理后台路径前缀：需携带 role=admin 的 JWT（P3） */
+    private static final String ADMIN_PATH_PREFIX = "/api/admin/";
+
+    /** 管理员登录（白名单） */
+    private static final String ADMIN_LOGIN_PATH = "/api/admin/auth/login";
+
+    /** 管理员角色声明值（与 eshop-user 签发约定一致） */
+    private static final String ROLE_ADMIN = "admin";
 
     private static final String NOT_FOUND_BODY =
             "{\"code\":404,\"message\":\"资源不存在\",\"data\":null}";
@@ -78,6 +91,16 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             return notFound(exchange, path);
         }
 
+        // 管理员登录白名单
+        if (HttpMethod.POST.equals(method) && ADMIN_LOGIN_PATH.equals(path)) {
+            return chain.filter(exchange.mutate().request(requestBuilder.build()).build());
+        }
+
+        // 管理端接口：要求携带 role=admin 的 JWT（先于普通白名单判断）
+        if (path.startsWith(ADMIN_PATH_PREFIX)) {
+            return filterAdmin(exchange, chain, requestBuilder, request, path);
+        }
+
         // 白名单放行
         if (isWhitelisted(method, path)) {
             return chain.filter(exchange.mutate().request(requestBuilder.build()).build());
@@ -110,6 +133,30 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             return HEALTH_PATTERN.matcher(path).matches();
         }
         return false;
+    }
+
+    /** 管理端鉴权：token 有效且 role=admin 才放行；透传管理员 ID 至 X-User-Id（P3） */
+    private Mono<Void> filterAdmin(ServerWebExchange exchange, GatewayFilterChain chain,
+                                   ServerHttpRequest.Builder requestBuilder,
+                                   ServerHttpRequest request, String path) {
+        String authorization = request.getHeaders().getFirst(HEADER_AUTHORIZATION);
+        if (authorization == null || !authorization.startsWith(TOKEN_PREFIX)) {
+            return unauthorized(exchange, path, "admin token 缺失");
+        }
+        Claims claims = jwtVerifier.verify(authorization.substring(TOKEN_PREFIX.length()));
+        if (claims == null) {
+            return unauthorized(exchange, path, "admin token 无效或已过期");
+        }
+        if (!ROLE_ADMIN.equals(claims.get("role", String.class))) {
+            return forbidden(exchange, path);
+        }
+        requestBuilder.header(HEADER_USER_ID, claims.getSubject());
+        return chain.filter(exchange.mutate().request(requestBuilder.build()).build());
+    }
+
+    private Mono<Void> forbidden(ServerWebExchange exchange, String path) {
+        log.debug("管理端权限拦截: path={}", path);
+        return writeJson(exchange, HttpStatus.FORBIDDEN, FORBIDDEN_BODY);
     }
 
     private Mono<Void> unauthorized(ServerWebExchange exchange, String path, String reason) {

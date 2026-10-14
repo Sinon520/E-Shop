@@ -47,4 +47,45 @@
         </choose>
     </select>
 
+    <!--
+      管理端商品分页（P3）：与 C 端版本差异——
+      1. 不限定 s.status（可查全部 / 按状态筛选，含下架商品）；
+      2. 价格改为 LEFT JOIN（下架商品可能没有在架 SKU，INNER JOIN 会丢行）；
+      3. SKU 最低价不限定 status（管理端看全量 SKU 的最低价）。
+    -->
+    <select id="selectAdminSpuPage" resultType="com.eshop.product.vo.AdminSpuVO">
+        SELECT s.id,
+               s.name,
+               s.main_image,
+               s.category_id,
+               s.status,
+               s.sales,
+               p.price,
+               p.market_price
+        FROM t_spu s
+        LEFT JOIN (
+            SELECT spu_id, price, market_price
+            FROM (
+                SELECT spu_id,
+                       price,
+                       market_price,
+                       ROW_NUMBER() OVER (PARTITION BY spu_id ORDER BY price ASC, id ASC) AS rn
+                FROM t_sku
+                WHERE deleted = 0
+            ) lowest
+            WHERE lowest.rn = 1
+        ) p ON p.spu_id = s.id
+        WHERE s.deleted = 0
+        <if test="status != null">
+            AND s.status = #{status}
+        </if>
+        <if test="categoryId != null">
+            AND s.category_id = #{categoryId}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND s.name LIKE CONCAT('%', #{keyword}, '%')
+        </if>
+        ORDER BY s.id DESC
+    </select>
+
 </mapper>

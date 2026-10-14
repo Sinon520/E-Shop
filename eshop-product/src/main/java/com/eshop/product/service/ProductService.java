@@ -135,17 +135,18 @@ public class ProductService {
     }
 
     /**
-     * 内部接口：批量查询 SKU 信息（eshop-cart 购物车展示 / eshop-order 下单快照）
+     * 内部接口：批量查询 SKU 信息（eshop-cart 购物车展示 / eshop-order 下单快照 / 管理端库存展示）
      * <p>
-     * 仅返回在架 SKU；调用方按返回结果过滤（查不到 = 已删除/下架）
+     * 默认仅返回在架 SKU；管理端场景 includeOffline=true 时含下架 SKU；
+     * 调用方按返回结果过滤（查不到 = 已删除）
      */
-    public List<SkuInfoDTO> listSkuInfo(List<Long> skuIds) {
+    public List<SkuInfoDTO> listSkuInfo(List<Long> skuIds, boolean includeOffline) {
         if (skuIds == null || skuIds.isEmpty()) {
             return List.of();
         }
         List<Sku> skus = skuMapper.selectList(new LambdaQueryWrapper<Sku>()
                 .in(Sku::getId, skuIds)
-                .eq(Sku::getStatus, 1));
+                .eq(!includeOffline, Sku::getStatus, 1));
         if (skus.isEmpty()) {
             return List.of();
         }

@@ -29,13 +29,27 @@ public class JwtVerifier {
      * 校验 token（签名 / 有效期），通过则返回用户 ID；无效返回 null
      */
     public Long verifyAndGetUserId(String token) {
+        Claims claims = verify(token);
+        if (claims == null) {
+            return null;
+        }
         try {
-            Claims claims = Jwts.parser()
+            return Long.valueOf(claims.getSubject());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /**
+     * 解析 token 的 claims（含 role 等声明）；签名或有效期校验失败返回 null
+     */
+    public Claims verify(String token) {
+        try {
+            return Jwts.parser()
                     .verifyWith(key)
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
-            return Long.valueOf(claims.getSubject());
         } catch (JwtException | IllegalArgumentException e) {
             return null;
         }

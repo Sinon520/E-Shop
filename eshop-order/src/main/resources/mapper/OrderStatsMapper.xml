@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.eshop.order.mapper.OrderStatsMapper">
+
+    <!--
+      管理端看板统计（P3）
+      成交口径：status ∈ (1 已支付 / 2 已发货 / 3 已完成)；金额取 pay_amount。
+      deleted 条件手写（自定义 SQL 不经过 MyBatis-Plus 逻辑删除拼接）。
+    -->
+
+    <select id="sumPaidAmountSince" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(pay_amount), 0)
+        FROM t_order
+        WHERE deleted = 0
+          AND status IN (1, 2, 3)
+          AND pay_time >= #{since}
+    </select>
+
+    <select id="countSince" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM t_order
+        WHERE deleted = 0
+          AND create_time >= #{since}
+    </select>
+
+    <select id="countByStatus" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM t_order
+        WHERE deleted = 0
+          AND status = #{status}
+    </select>
+
+    <select id="sumPaidAmountAll" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(pay_amount), 0)
+        FROM t_order
+        WHERE deleted = 0
+          AND status IN (1, 2, 3)
+    </select>
+
+    <select id="countGroupByStatus" resultType="java.util.Map">
+        SELECT status, COUNT(*) AS cnt
+        FROM t_order
+        WHERE deleted = 0
+        GROUP BY status
+        ORDER BY status
+    </select>
+
+    <select id="salesTrend" resultType="java.util.Map">
+        SELECT DATE(create_time) AS d,
+               COALESCE(SUM(CASE WHEN status IN (1, 2, 3) THEN pay_amount ELSE 0 END), 0) AS amount,
+               COUNT(*) AS orders
+        FROM t_order
+        WHERE deleted = 0
+          AND create_time >= #{since}
+        GROUP BY DATE(create_time)
+        ORDER BY d
+    </select>
+
+    <select id="hotTop" resultType="java.util.Map">
+        SELECT oi.spu_name       AS name,
+               SUM(oi.quantity)  AS qty,
+               SUM(oi.total_amount) AS amount
+        FROM t_order_item oi
+                 INNER JOIN t_order o ON o.order_no = oi.order_no AND o.deleted = 0
+        WHERE o.status IN (1, 2, 3)
+        GROUP BY oi.sku_id, oi.spu_name
+        ORDER BY qty DESC
+        LIMIT 5
+    </select>
+
+</mapper>

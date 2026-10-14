@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>E-Shop 管理后台 · 原型</title>
+<style>
+:root{--primary:#EE4D2D;--primary-dark:#D93A1A;--primary-light:#FFF3EF;--text:#1F2329;--text-2:#5C6470;--text-3:#9AA1AC;--bg:#F4F5F7;--card:#fff;--border:#ECEEF1;--side:#1F2430;--side-active:#2A3040;--radius:12px;--shadow:0 2px 12px rgba(31,35,41,.06);--green:#1F9D55;--green-light:#E8F7EF;--orange:#D97614;--orange-light:#FDF3E7;--red:#D93025;--red-light:#FDECEA;--blue:#1B66D6;--blue-light:#EAF2FE}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;color:var(--text);background:var(--bg);font-size:13px;line-height:1.6}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select{font-family:inherit;outline:none}
+.hide{display:none!important}
+
+/* ============ 登录页 ============ */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1F2430,#2A3040 60%,#3A2A26)}
+.login-card{width:400px;background:#fff;border-radius:16px;padding:40px 36px;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.login-logo{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:700;margin-bottom:6px}
+.login-logo .mark{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#FF6B3D,#EE4D2D);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800}
+.login-sub{color:var(--text-3);font-size:13px;margin-bottom:26px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:13px;color:var(--text-2);margin-bottom:6px}
+.field input,.field select{width:100%;height:40px;border:1px solid #DCDFE6;border-radius:8px;padding:0 12px;font-size:14px;transition:.15s;background:#fff}
+.field input:focus,.field select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(238,77,45,.1)}
+.login-btn{width:100%;height:42px;border-radius:8px;background:var(--primary);color:#fff;font-size:15px;font-weight:600;margin-top:8px}
+.login-btn:hover{background:var(--primary-dark)}
+.login-tip{margin-top:16px;text-align:center;color:var(--text-3);font-size:12px}
+
+/* ============ 主布局 ============ */
+.layout{display:flex;min-height:100vh}
+.side{width:224px;background:var(--side);color:#C3C8D4;display:flex;flex-direction:column;flex:none;position:sticky;top:0;height:100vh}
+.side-logo{display:flex;align-items:center;gap:10px;height:56px;padding:0 18px;color:#fff;font-size:16px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.08)}
+.side-logo .mark{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,#FF6B3D,#EE4D2D);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800}
+.side-logo small{font-size:11px;color:#8A92A6;font-weight:400;margin-left:2px}
+.menu{padding:12px 10px;display:flex;flex-direction:column;gap:4px;flex:1}
+.menu-item{display:flex;align-items:center;gap:10px;height:42px;padding:0 14px;border-radius:9px;font-size:14px;color:#C3C8D4;cursor:pointer;transition:.15s}
+.menu-item svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.menu-item:hover{background:rgba(255,255,255,.06);color:#fff}
+.menu-item.on{background:var(--side-active);color:#fff;font-weight:500;box-shadow:inset 3px 0 0 var(--primary)}
+.side-foot{padding:14px 18px;border-top:1px solid rgba(255,255,255,.08);font-size:12px;color:#8A92A6}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:56px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:14px;position:sticky;top:0;z-index:20}
+.topbar h1{font-size:16px;font-weight:600}
+.topbar .crumb{color:var(--text-3);font-size:12px;margin-left:2px}
+.topbar .spacer{flex:1}
+.admin-chip{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2)}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--primary-light);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+.logout-btn{color:var(--text-3);font-size:13px;padding:4px 8px;border-radius:6px}
+.logout-btn:hover{color:var(--red);background:var(--red-light)}
+.content{padding:20px 24px 40px;flex:1}
+
+/* ============ 通用组件 ============ */
+.panel{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;margin-bottom:16px}
+.panel-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.panel-hd h2{font-size:15px;font-weight:600}
+.panel-hd .sub{color:var(--text-3);font-size:12px;font-weight:400;margin-left:8px}
+.btn{display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 14px;border-radius:7px;font-size:13px;font-weight:500;transition:.15s;white-space:nowrap}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary-dark)}
+.btn-default{background:#fff;border:1px solid #DCDFE6;color:var(--text)}
+.btn-default:hover{border-color:var(--primary);color:var(--primary)}
+.btn-text{color:var(--primary);padding:0 6px;height:26px}
+.btn-text:hover{background:var(--primary-light);border-radius:6px}
+.btn-text.danger{color:var(--red)}
+.btn-text.danger:hover{background:var(--red-light)}
+.btn-text.blue{color:var(--blue)}
+.btn-text.blue:hover{background:var(--blue-light)}
+.tag{display:inline-flex;align-items:center;padding:1px 9px;border-radius:5px;font-size:12px;height:22px;white-space:nowrap}
+.tag-green{background:var(--green-light);color:var(--green)}
+.tag-orange{background:var(--orange-light);color:var(--orange)}
+.tag-red{background:var(--red-light);color:var(--red)}
+.tag-blue{background:var(--blue-light);color:var(--blue)}
+.tag-gray{background:#F0F1F3;color:var(--text-2)}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{background:#FAFAFB;color:var(--text-2);font-weight:500;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+.tbl td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.tbl tbody tr:hover{background:#FCFCFD}
+.tbl .num{font-variant-numeric:tabular-nums}
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.toolbar .spacer{flex:1}
+.inp{height:32px;border:1px solid #DCDFE6;border-radius:7px;padding:0 11px;font-size:13px;background:#fff}
+.inp:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(238,77,45,.08)}
+select.inp{cursor:pointer}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:14px}
+.tab{padding:8px 14px;font-size:13px;color:var(--text-2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab:hover{color:var(--primary)}
+.tab.on{color:var(--primary);font-weight:600;border-color:var(--primary)}
+.pager{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:14px;font-size:13px;color:var(--text-2)}
+.pager button{min-width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--text-2);font-size:13px}
+.pager button.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.pager button:disabled{opacity:.4;cursor:not-allowed}
+.pager button:not(:disabled):hover{border-color:var(--primary);color:var(--primary)}
+.thumb-img{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex:none}
+.thumb-img svg{width:60%;height:60%;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.cell-main{display:flex;align-items:center;gap:10px}
+.cell-main .name{font-weight:500}
+.cell-main .desc{color:var(--text-3);font-size:12px}
+
+/* 统计卡 */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px}
+.stat-card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px}
+.stat-card .lbl{color:var(--text-3);font-size:13px;display:flex;align-items:center;gap:6px}
+.stat-card .val{font-size:26px;font-weight:700;margin:8px 0 4px;font-variant-numeric:tabular-nums}
+.stat-card .delta{font-size:12px}
+.stat-card .delta.up{color:var(--green)}
+.stat-card .delta.down{color:var(--red)}
+.stat-card .delta.flat{color:var(--text-3)}
+.dash-grid{display:grid;grid-template-columns:1fr 380px;gap:16px;margin-bottom:16px}
+.dash-grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.chart svg{width:100%;display:block}
+.rank-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px dashed var(--border)}
+.rank-row:last-child{border-bottom:none}
+.rank-no{width:22px;height:22px;border-radius:6px;background:#F0F1F3;color:var(--text-2);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+.rank-row:nth-child(1) .rank-no{background:var(--primary);color:#fff}
+.rank-row:nth-child(2) .rank-no{background:#FFB08A;color:#fff}
+.rank-row:nth-child(3) .rank-no{background:#FFD8C6;color:var(--primary-dark)}
+.rank-name{flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank-val{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.rank-val small{color:var(--text-3);font-weight:400;margin-left:4px;font-size:12px}
+
+/* 弹窗 */
+.mask{position:fixed;inset:0;background:rgba(31,35,41,.45);display:flex;align-items:center;justify-content:center;z-index:100;animation:fadeIn .15s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:#fff;border-radius:14px;width:520px;max-width:92vw;max-height:86vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:pop .18s}
+.modal.wide{width:760px}
+@keyframes pop{from{transform:scale(.96);opacity:.6}to{transform:scale(1);opacity:1}}
+.modal-hd{padding:16px 22px;border-bottom:1px solid var(--border);font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:space-between;flex:none}
+.modal-x{width:28px;height:28px;border-radius:7px;color:var(--text-3);font-size:16px;display:flex;align-items:center;justify-content:center}
+.modal-x:hover{background:#F0F1F3;color:var(--text)}
+.modal-bd{padding:20px 22px;overflow-y:auto}
+.modal-ft{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;flex:none}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+.form-grid .full{grid-column:1/-1}
+
+/* 订单详情时间线 */
+.timeline{margin-top:6px;padding-left:4px}
+.tl-item{display:flex;gap:12px;position:relative;padding-bottom:16px}
+.tl-item:not(:last-child)::before{content:"";position:absolute;left:5px;top:16px;bottom:2px;width:1px;background:var(--border)}
+.tl-dot{width:11px;height:11px;border-radius:50%;background:#D8DCE2;flex:none;margin-top:4px;position:relative;z-index:1}
+.tl-item.on .tl-dot{background:var(--primary);box-shadow:0 0 0 3px var(--primary-light)}
+.tl-txt{font-size:13px}
+.tl-txt small{color:var(--text-3);display:block;font-size:12px}
+
+/* toast */
+#toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:8px;align-items:center}
+.toast-item{background:rgba(31,35,41,.92);color:#fff;padding:9px 18px;border-radius:9px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:drop .2s}
+@keyframes drop{from{transform:translateY(-8px);opacity:0}to{transform:translateY(0);opacity:1}}
+.low-stock{color:var(--red);font-weight:600}
+</style>
+</head>
+<body>
+
+<!-- ==================== 登录页 ==================== -->
+<div id="loginView" class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo"><div class="mark">E</div>E-Shop 管理后台</div>
+    <div class="login-sub">微服务电商平台 · 运营管理端（原型演示）</div>
+    <div class="field">
+      <label>管理员账号</label>
+      <input id="loginUser" value="admin" />
+    </div>
+    <div class="field">
+      <label>密码</label>
+      <input id="loginPwd" type="password" value="admin123" />
+    </div>
+    <button class="login-btn" onclick="doLogin()">登 录</button>
+    <div class="login-tip">演示账号 admin / admin123（原型交互，非真实鉴权）</div>
+  </div>
+</div>
+
+<!-- ==================== 后台主体 ==================== -->
+<div id="appView" class="layout hide">
+  <aside class="side">
+    <div class="side-logo"><div class="mark">E</div>E-Shop<small>管理台</small></div>
+    <nav class="menu" id="menu">
+      <div class="menu-item on" data-page="dashboard" onclick="go('dashboard')">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>数据看板
+      </div>
+      <div class="menu-item" data-page="goods" onclick="go('goods')">
+        <svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path d="M4 7.5l8 4.5 8-4.5"/><path d="M12 12v9"/></svg>商品管理
+      </div>
+      <div class="menu-item" data-page="category" onclick="go('category')">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>分类管理
+      </div>
+      <div class="menu-item" data-page="stock" onclick="go('stock')">
+        <svg viewBox="0 0 24 24"><path d="M4 8l8-5 8 5v8l-8 5-8-5V8z"/><path d="M4 8l8 5 8-5"/><path d="M12 13v8"/></svg>库存管理
+      </div>
+      <div class="menu-item" data-page="orders" onclick="go('orders')">
+        <svg viewBox="0 0 24 24"><path d="M6 3h12a2 2 0 012 2v16l-3-2-2 2-3-2-2 2-3-2-3 2V5a2 2 0 012-2z"/><path d="M9 8h6M9 12h6"/></svg>订单管理
+      </div>
+      <div class="menu-item" data-page="users" onclick="go('users')">
+        <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17.5" cy="9.5" r="2.5"/><path d="M15.5 14.2c2.9.4 5 2.9 5 5.8"/></svg>用户管理
+      </div>
+    </nav>
+    <div class="side-foot">架构：Spring Cloud 微服务<br/>v1.0 · 原型演示</div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <h1 id="pageTitle">数据看板</h1>
+      <span class="crumb" id="pageCrumb">运营总览</span>
+      <div class="spacer"></div>
+      <div class="admin-chip"><div class="avatar">A</div>admin</div>
+      <button class="logout-btn" onclick="logout()">退出登录</button>
+    </header>
+
+    <div class="content">
+
+      <!-- ========== 数据看板 ========== -->
+      <section id="page-dashboard">
+        <div class="stat-grid" id="statCards"></div>
+        <div class="dash-grid">
+          <div class="panel">
+            <div class="panel-hd"><h2>销售趋势<span class="sub">近 7 天成交金额（元）</span></h2></div>
+            <div class="chart" id="trendChart"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-hd"><h2>订单状态分布</h2></div>
+            <div class="chart" id="statusChart"></div>
+          </div>
+        </div>
+        <div class="dash-grid">
+          <div class="panel">
+            <div class="panel-hd"><h2>热销商品 TOP5<span class="sub">按销量</span></h2></div>
+            <div id="rankList"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-hd"><h2>待处理事项</h2></div>
+            <div id="todoList"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 商品管理 ========== -->
+      <section id="page-goods" class="hide">
+        <div class="panel">
+          <div class="toolbar">
+            <input class="inp" id="goodsKw" placeholder="商品名称 / ID" style="width:200px" oninput="renderGoods()" />
+            <select class="inp" id="goodsCat" onchange="renderGoods()"><option value="">全部分类</option></select>
+            <select class="inp" id="goodsStatus" onchange="renderGoods()"><option value="">全部状态</option><option value="1">上架中</option><option value="0">已下架</option></select>
+            <button class="btn btn-default" onclick="resetGoods()">重置</button>
+            <div class="spacer"></div>
+            <button class="btn btn-primary" onclick="openGoodsModal()">＋ 新增商品</button>
+          </div>
+          <table class="tbl">
+            <thead><tr><th style="width:56px">ID</th><th>商品</th><th>分类</th><th>价格</th><th>销量</th><th>状态</th><th style="width:210px">操作</th></tr></thead>
+            <tbody id="goodsBody"></tbody>
+          </table>
+          <div class="pager"><span id="goodsTotal" style="margin-right:auto;color:var(--text-3);font-size:12px"></span><button disabled>‹</button><button class="on">1</button><button disabled>›</button></div>
+        </div>
+      </section>
+
+      <!-- ========== 分类管理 ========== -->
+      <section id="page-category" class="hide">
+        <div class="panel">
+          <div class="toolbar">
+            <div class="spacer"></div>
+            <button class="btn btn-primary" onclick="openCatModal()">＋ 新增分类</button>
+          </div>
+          <table class="tbl">
+            <thead><tr><th style="width:56px">ID</th><th>分类名称</th><th>层级</th><th>父级</th><th>排序</th><th>状态</th><th style="width:140px">操作</th></tr></thead>
+            <tbody id="catBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ========== 库存管理 ========== -->
+      <section id="page-stock" class="hide">
+        <div class="panel">
+          <div class="toolbar">
+            <input class="inp" id="stockKw" placeholder="SKU / 商品名称" style="width:200px" oninput="renderStock()" />
+            <label style="display:flex;align-items:center;gap:6px;color:var(--text-2);cursor:pointer">
+              <input type="checkbox" id="stockLow" onchange="renderStock()" /> 仅看低库存（< 20）
+            </label>
+            <div class="spacer"></div>
+            <button class="btn btn-default" onclick="preheat()">缓存预热</button>
+          </div>
+          <table class="tbl">
+            <thead><tr><th style="width:70px">SKU ID</th><th>商品 / 规格</th><th class="num">可售</th><th class="num">锁定</th><th class="num">已售</th><th>Redis 预扣值</th><th style="width:110px">操作</th></tr></thead>
+            <tbody id="stockBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ========== 订单管理 ========== -->
+      <section id="page-orders" class="hide">
+        <div class="panel">
+          <div class="tabs" id="orderTabs">
+            <div class="tab on" data-st="">全部</div>
+            <div class="tab" data-st="0">待支付</div>
+            <div class="tab" data-st="1">已支付</div>
+            <div class="tab" data-st="2">已发货</div>
+            <div class="tab" data-st="3">已完成</div>
+            <div class="tab" data-st="4">已取消</div>
+            <div class="tab" data-st="5">已超时关闭</div>
+          </div>
+          <div class="toolbar">
+            <input class="inp" id="orderKw" placeholder="订单号" style="width:240px" oninput="renderOrders()" />
+            <div class="spacer"></div>
+          </div>
+          <table class="tbl">
+            <thead><tr><th>订单号</th><th>用户</th><th>商品</th><th class="num">金额</th><th>状态</th><th>下单时间</th><th style="width:150px">操作</th></tr></thead>
+            <tbody id="orderBody"></tbody>
+          </table>
+          <div class="pager"><span id="orderTotal" style="margin-right:auto;color:var(--text-3);font-size:12px"></span><button disabled>‹</button><button class="on">1</button><button disabled>›</button></div>
+        </div>
+      </section>
+
+      <!-- ========== 用户管理 ========== -->
+      <section id="page-users" class="hide">
+        <div class="panel">
+          <div class="toolbar">
+            <input class="inp" id="userKw" placeholder="用户名 / 手机号" style="width:200px" oninput="renderUsers()" />
+            <div class="spacer"></div>
+          </div>
+          <table class="tbl">
+            <thead><tr><th style="width:60px">ID</th><th>用户名</th><th>手机号</th><th>注册时间</th><th>订单数</th><th>状态</th><th style="width:110px">操作</th></tr></thead>
+            <tbody id="userBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<div id="modalRoot"></div>
+<div id="toast"></div>
+
+<script>
+/* ==================== Mock 数据（对应 P3 后端接口的设计输入） ==================== */
+const CATS = [
+  {id:1,name:'手机数码',level:1,parent:'—',sort:1,status:1},
+  {id:2,name:'电脑办公',level:1,parent:'—',sort:2,status:1},
+  {id:3,name:'服饰鞋包',level:1,parent:'—',sort:3,status:1},
+  {id:4,name:'家用电器',level:1,parent:'—',sort:4,status:1},
+  {id:5,name:'食品生鲜',level:1,parent:'—',sort:5,status:1},
+  {id:11,name:'手机通讯',level:2,parent:'手机数码',sort:1,status:1},
+  {id:31,name:'运动户外',level:2,parent:'服饰鞋包',sort:2,status:0}
+];
+const SPUS = [
+  {id:10,name:'轻云运动鞋 透气男女同款',cat:'服饰鞋包',price:329,sales:1268,status:1,icon:'shoe',color:'#E8F0FE'},
+  {id:9,name:'降噪无线蓝牙耳机 Pro',cat:'手机数码',price:799,sales:966,status:1,icon:'earphone',color:'#FDECEA'},
+  {id:8,name:'5G 智能手机 256G',cat:'手机数码',price:3499,sales:512,status:1,icon:'phone',color:'#E8F7EF'},
+  {id:7,name:'机械键盘 87 键 茶轴',cat:'电脑办公',price:459,sales:388,status:1,icon:'keyboard',color:'#FDF3E7'},
+  {id:6,name:'保温杯 316 不锈钢 500ml',cat:'食品生鲜',price:129,sales:345,status:1,icon:'cup',color:'#EAF2FE'},
+  {id:5,name:'双肩背包 15.6 寸电脑仓',cat:'服饰鞋包',price:259,sales:233,status:1,icon:'bag',color:'#F0EBFE'},
+  {id:4,name:'智能手环 血氧监测',cat:'手机数码',price:299,sales:189,status:0,icon:'band',color:'#E8F7EF'},
+  {id:3,name:'蓝牙音箱 重低音便携',cat:'手机数码',price:399,sales:98,status:1,icon:'speaker',color:'#FDECEA'},
+  {id:2,name:'电竞鼠标 无线双模',cat:'电脑办公',price:239,sales:76,status:0,icon:'mouse',color:'#FDF3E7'},
+  {id:1,name:'速干运动 T 恤 男款',cat:'服饰鞋包',price:99,sales:45,status:1,icon:'shirt',color:'#E8F0FE'}
+];
+const SKUS = [
+  {id:103,spu:10,name:'43 号',price:329,avail:50,locked:50,sold:0},
+  {id:102,spu:10,name:'42 号',price:329,avail:198,locked:0,sold:0},
+  {id:101,spu:10,name:'41 号',price:329,avail:12,locked:0,sold:0},
+  {id:92,spu:9,name:'黑色 降噪版',price:799,avail:164,locked:0,sold:0},
+  {id:91,spu:9,name:'白色 标准版',price:799,avail:7,locked:0,sold:0},
+  {id:86,spu:8,name:'曜石黑 256G',price:3499,avail:66,locked:0,sold:0},
+  {id:85,spu:8,name:'星光白 256G',price:3499,avail:210,locked:0,sold:0},
+  {id:76,spu:7,name:'茶轴 白光',price:459,avail:88,locked:0,sold:0},
+  {id:66,spu:6,name:'500ml 雾蓝',price:129,avail:320,locked:0,sold:0},
+  {id:56,spu:5,name:'深空灰 15.6 寸',price:259,avail:16,locked:0,sold:0}
+];
+const ORDERS = [
+  {no:'ES20261014214756911164',user:'sinon',items:'降噪无线蓝牙耳机 Pro ×1',amount:799,status:0,time:'2026-10-14 21:47:56'},
+  {no:'ES20261014212644246425',user:'sinon',items:'43 号 运动鞋 ×1',amount:329,status:0,time:'2026-10-14 21:26:44'},
+  {no:'ES20261014211927811708',user:'sinon',items:'43 号 运动鞋 ×1',amount:329,status:1,time:'2026-10-14 21:19:27'},
+  {no:'ES20261014204743982058',user:'sinon',items:'42 号 运动鞋 ×1',amount:329,status:4,time:'2026-10-14 20:47:43'},
+  {no:'ES20261014204712135702',user:'sinon',items:'43 号 运动鞋 ×1',amount:329,status:5,time:'2026-10-14 20:47:12'},
+  {no:'ES20261014203337396338',user:'sinon',items:'41 号 运动鞋 ×1',amount:329,status:1,time:'2026-10-14 20:33:37'},
+  {no:'ES20261014194439957637',user:'demo',items:'白色 标准版 耳机 ×2',amount:1598,status:2,time:'2026-10-14 19:44:39'},
+  {no:'ES20261014194430819192',user:'demo',items:'曜石黑 256G 手机 ×1',amount:3499,status:3,time:'2026-10-14 19:44:30'},
+  {no:'ES20261014193012203107',user:'alice',items:'速干运动 T 恤 ×3',amount:297,status:3,time:'2026-10-14 19:30:12'},
+  {no:'ES20261014191545880012',user:'bob',items:'保温杯 ×1',amount:129,status:4,time:'2026-10-14 19:15:45'}
+];
+const USERS = [
+  {id:1,username:'sinon',phone:'138****0000',reg:'2026-10-14 17:20',orders:21,status:1},
+  {id:2,username:'demo',phone:'139****0002',reg:'2026-10-13 10:02',orders:6,status:1},
+  {id:3,username:'alice',phone:'137****1111',reg:'2026-10-12 15:40',orders:3,status:1},
+  {id:4,username:'bob',phone:'136****2222',reg:'2026-10-12 09:11',orders:1,status:1},
+  {id:5,username:'carol',phone:'135****3333',reg:'2026-10-11 21:30',orders:0,status:0}
+];
+const STATUS_TAG = {0:['tag-orange','待支付'],1:['tag-blue','已支付'],2:['tag-green','已发货'],3:['tag-green','已完成'],4:['tag-gray','已取消'],5:['tag-gray','已超时关闭']};
+
+/* ==================== 图标 ==================== */
+const ICONS = {
+  shoe:'<path d="M4 17h16M4 17c0-2 1-4.5 4-5l3-1.2c.8-.3 1.6-.6 2.3-1L16 8.5c.5-.3 1-.6 1.6-.6 1.3 0 2.4 1 2.4 2.3V14c0 1.7-1.3 3-3 3H4z"/>',
+  earphone:'<path d="M5 13a7 7 0 0114 0v4a3 3 0 01-3 3h-2M5 13v3"/><circle cx="5" cy="17" r="2.4"/><circle cx="19" cy="17" r="2.4"/>',
+  phone:'<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M10.5 5h3M11 18.5h2"/>',
+  keyboard:'<rect x="2.5" y="7" width="19" height="11" rx="2"/><path d="M6 11h.01M9 11h.01M12 11h.01M15 11h.01M18 11h.01M7 14.5h10"/>',
+  cup:'<path d="M7 4h10l-.7 14.2A2 2 0 0114.3 20H9.7a2 2 0 01-2-1.8L7 4z"/><path d="M7.5 9h9"/>',
+  bag:'<path d="M6 8h12l1.2 11.2a2 2 0 01-2 2.3H6.8a2 2 0 01-2-2.3L6 8z"/><path d="M9 10V6a3 3 0 016 0v4"/>',
+  band:'<rect x="8" y="6" width="8" height="12" rx="3"/><path d="M10 6V3.5h4V6M10 18v2.5h4V18"/>',
+  speaker:'<rect x="5" y="3" width="14" height="18" rx="2.5"/><circle cx="12" cy="9" r="2.6"/><circle cx="12" cy="16.5" r="1.4"/>',
+  mouse:'<rect x="7" y="3" width="10" height="18" rx="5"/><path d="M12 7v3"/>',
+  shirt:'<path d="M8 3l4 2 4-2 4 4-2.5 2.5V21h-11V9.5L4 7l4-4z"/>'
+};
+function svgIcon(name,color){const c=color||'#EE4D2D';return '<svg viewBox="0 0 24 24" style="stroke:'+c+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none">'+(ICONS[name]||'')+'</svg>';}
+const thumb=(spu)=>'<div class="thumb-img" style="background:'+spu.color+'">'+svgIcon(spu.icon)+'</div>';
+
+/* ==================== 通用 ==================== */
+function $(s){return document.querySelector(s);}
+function toast(msg){const t=document.createElement('div');t.className='toast-item';t.textContent=msg;$('#toast').appendChild(t);setTimeout(()=>t.remove(),2200);}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+/* ==================== 登录/导航 ==================== */
+function doLogin(){
+  const u=$('#loginUser').value.trim(),p=$('#loginPwd').value.trim();
+  if(!u||!p){toast('请输入账号和密码');return;}
+  $('#loginView').classList.add('hide');
+  $('#appView').classList.remove('hide');
+  toast('登录成功，欢迎回来 '+u);
+}
+function logout(){
+  $('#appView').classList.add('hide');
+  $('#loginView').classList.remove('hide');
+  toast('已退出登录');
+}
+const PAGE_META={dashboard:['数据看板','运营总览'],goods:['商品管理','SPU / SKU 二级结构'],category:['分类管理','一二级分类维护'],stock:['库存管理','实时账目与 Redis 预扣'],orders:['订单管理','查询 / 发货'],users:['用户管理','账号与状态']};
+function go(page){
+  document.querySelectorAll('.menu-item').forEach(el=>el.classList.toggle('on',el.dataset.page===page));
+  document.querySelectorAll('.content>section').forEach(el=>el.classList.add('hide'));
+  $('#page-'+page).classList.remove('hide');
+  $('#pageTitle').textContent=PAGE_META[page][0];
+  $('#pageCrumb').textContent=PAGE_META[page][1];
+  if(page==='dashboard')renderDashboard();
+}
+
+/* ==================== 数据看板 ==================== */
+function renderDashboard(){
+  const stats=[
+    {lbl:'今日销售额',val:'¥ 15,382',delta:'+12.4% 环比昨日',cls:'up'},
+    {lbl:'今日订单数',val:'86',delta:'+8 单',cls:'up'},
+    {lbl:'待发货订单',val:'5',delta:'需尽快处理',cls:'flat'},
+    {lbl:'注册用户',val:'1,024',delta:'+23 今日新增',cls:'up'}
+  ];
+  $('#statCards').innerHTML=stats.map(s=>'<div class="stat-card"><div class="lbl">'+s.lbl+'</div><div class="val">'+s.val+'</div><div class="delta '+s.cls+'">'+s.delta+'</div></div>').join('');
+
+  // 折线图（SVG 手绘）
+  const days=['10-08','10-09','10-10','10-11','10-12','10-13','10-14'];
+  const vals=[8200,9600,8800,11200,10400,12680,15382];
+  const w=560,h=220,pad=36;
+  const max=Math.max(...vals)*1.15;
+  const px=i=>pad+i*(w-pad*2)/(days.length-1);
+  const py=v=>h-28-(v/max)*(h-56);
+  const pts=vals.map((v,i)=>px(i)+','+py(v)).join(' ');
+  const area='M'+px(0)+','+(h-28)+' L'+vals.map((v,i)=>px(i)+','+py(v)).join(' L')+' L'+px(vals.length-1)+','+(h-28)+' Z';
+  let grid='';
+  for(let i=0;i<=4;i++){const y=28+i*(h-56)/4;grid+='<line x1="'+pad+'" y1="'+y+'" x2="'+(w-pad)+'" y2="'+y+'" stroke="#F0F1F3"/>';}
+  let labels=days.map((d,i)=>'<text x="'+px(i)+'" y="'+(h-8)+'" font-size="11" fill="#9AA1AC" text-anchor="middle">'+d+'</text>').join('');
+  let dots=vals.map((v,i)=>'<circle cx="'+px(i)+'" cy="'+py(v)+'" r="3.5" fill="#fff" stroke="#EE4D2D" stroke-width="2"/>').join('');
+  $('#trendChart').innerHTML='<svg viewBox="0 0 '+w+' '+h+'">'+grid+
+    '<defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EE4D2D" stop-opacity=".18"/><stop offset="1" stop-color="#EE4D2D" stop-opacity="0"/></linearGradient></defs>'+
+    '<path d="'+area+'" fill="url(#g1)"/><polyline points="'+pts+'" fill="none" stroke="#EE4D2D" stroke-width="2.4" stroke-linejoin="round"/>'+dots+labels+'</svg>';
+
+  // 环形图
+  const dist=[[5,'待支付','#F2A93B'],[4,'已支付','#3B82F6'],[2,'已发货','#1F9D55'],[3,'已完成','#0EA5A5'],[3,'已取消','#B8BFC9'],[1,'超时关闭','#8A92A6']];
+  const total=dist.reduce((s,d)=>s+d[0],0);
+  let acc=0,r=54,cir=2*Math.PI*r,seg='';
+  dist.forEach(d=>{
+    const len=d[0]/total*cir;
+    seg+='<circle cx="90" cy="90" r="'+r+'" fill="none" stroke="'+d[2]+'" stroke-width="22" stroke-dasharray="'+len+' '+(cir-len)+'" stroke-dashoffset="'+(-acc)+'" transform="rotate(-90 90 90)"/>';
+    acc+=len;
+  });
+  const legend=dist.map(d=>'<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin:5px 0"><span style="width:9px;height:9px;border-radius:3px;background:'+d[2]+'"></span><span style="flex:1;color:var(--text-2)">'+d[1]+'</span><b>'+d[0]+'</b></div>').join('');
+  $('#statusChart').innerHTML='<div style="display:flex;align-items:center;gap:18px"><svg viewBox="0 0 180 180" style="width:170px;flex:none">'+seg+'<text x="90" y="84" text-anchor="middle" font-size="24" font-weight="700" fill="#1F2329">'+total+'</text><text x="90" y="106" text-anchor="middle" font-size="11" fill="#9AA1AC">今日订单</text></svg><div style="flex:1">'+legend+'</div></div>';
+
+  // 热销榜
+  const rank=SPUS.slice().sort((a,b)=>b.sales-a.sales).slice(0,5);
+  $('#rankList').innerHTML=rank.map((s,i)=>'<div class="rank-row"><div class="rank-no">'+(i+1)+'</div>'+thumb(s)+'<div class="rank-name">'+esc(s.name)+'</div><div class="rank-val">'+(s.sales*10)+'<small>件</small></div></div>').join('');
+
+  // 待处理
+  const todos=[['待发货订单','5 单','orders','tag-orange'],['低库存 SKU（<20）','3 条','stock','tag-red'],['已下架商品','2 个','goods','tag-gray']];
+  $('#todoList').innerHTML=todos.map(t=>'<div class="rank-row" style="cursor:pointer" onclick="go(\''+t[2]+'\')"><span class="tag '+t[3]+'">'+t[0]+'</span><div class="rank-name"></div><div class="rank-val">'+t[1]+' ›</div></div>').join('');
+}
+
+/* ==================== 商品管理 ==================== */
+let goodsOpenSku={};
+function renderGoods(){
+  const kw=($('#goodsKw').value||'').trim(),cat=$('#goodsCat').value,st=$('#goodsStatus').value;
+  const list=SPUS.filter(s=>(!kw||s.name.includes(kw)||String(s.id)===kw)&&(!cat||s.cat===cat)&&(st===''||String(s.status)===st));
+  let rows='';
+  list.forEach(s=>{
+    const skus=SKUS.filter(k=>k.spu===s.id);
+    const open=goodsOpenSku[s.id];
+    rows+='<tr><td>'+(open?'▾':'▸')+' '+s.id+'</td>'+
+      '<td><div class="cell-main">'+thumb(s)+'<div><div class="name">'+esc(s.name)+'</div><div class="desc">'+skus.length+' 个 SKU</div></div></div></td>'+
+      '<td>'+s.cat+'</td><td class="num">¥ '+s.price+'</td><td class="num">'+s.sales+'</td>'+
+      '<td>'+(s.status? '<span class="tag tag-green">上架中</span>':'<span class="tag tag-gray">已下架</span>')+'</td>'+
+      '<td><button class="btn-text" onclick="toggleSku('+s.id+')">SKU</button><button class="btn-text blue" onclick="openGoodsModal('+s.id+')">编辑</button>'+
+      (s.status?'<button class="btn-text danger" onclick="toggleSpu('+s.id+',0)">下架</button>':'<button class="btn-text" onclick="toggleSpu('+s.id+',1)">上架</button>')+'</td></tr>';
+    if(open&&skus.length){
+      rows+='<tr><td></td><td colspan="6" style="background:#FAFAFB;padding:8px 12px 10px"><table class="tbl" style="font-size:12px"><thead><tr><th>SKU ID</th><th>规格</th><th class="num">售价</th><th class="num">可售</th><th class="num">已售</th></tr></thead><tbody>'+
+        skus.map(k=>'<tr><td>'+k.id+'</td><td>'+esc(k.name)+'</td><td class="num">¥ '+k.price+'</td><td class="num">'+k.avail+'</td><td class="num">'+k.sold+'</td></tr>').join('')+'</tbody></table></td></tr>';
+    }
+  });
+  $('#goodsBody').innerHTML=rows||'<tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:30px">没有符合条件的商品</td></tr>';
+  $('#goodsTotal').textContent='共 '+list.length+' 条（原型演示数据）';
+}
+function resetGoods(){$('#goodsKw').value='';$('#goodsCat').value='';$('#goodsStatus').value='';renderGoods();}
+function toggleSku(id){goodsOpenSku[id]=!goodsOpenSku[id];renderGoods();}
+function toggleSpu(id,st){const s=SPUS.find(x=>x.id===id);if(s){s.status=st;renderGoods();toast((st?'已上架：':'已下架：')+s.name);}}
+function openGoodsModal(id){
+  const s=id?SPUS.find(x=>x.id===id):null;
+  const catOpts=CATS.filter(c=>c.level===1).map(c=>'<option'+(s&&s.cat===c.name?' selected':'')+'>'+c.name+'</option>').join('');
+  showModal((s?'编辑商品 #'+s.id:'新增商品'),`
+  <div class="form-grid">
+    <div class="field full"><label>商品名称</label><input value="${s?esc(s.name):''}" placeholder="请输入 SPU 名称" /></div>
+    <div class="field"><label>所属分类</label><select>${catOpts}</select></div>
+    <div class="field"><label>品牌</label><input placeholder="选填" /></div>
+    <div class="field full"><label>主图</label><input placeholder="图片 URL（原型占位）" /></div>
+    <div class="field full"><label>SKU 规格（二级结构示例）</label>
+      <table class="tbl" style="font-size:12px"><thead><tr><th>规格名</th><th>售价</th><th>库存</th></tr></thead><tbody>
+      <tr><td>默认规格</td><td><input class="inp" style="height:28px;width:100px" value="${s?('¥ '+s.price):''}"/></td><td><input class="inp" style="height:28px;width:80px" value="100"/></td></tr>
+      </tbody></table>
+      <button class="btn btn-default" style="margin-top:8px" onclick="toast('原型演示：新增 SKU 行')">＋ 添加 SKU</button>
+    </div>
+    <div class="field full"><label>商品详情</label><input placeholder="富文本（原型占位）" /></div>
+  </div>`,()=>{toast('原型演示：保存成功（对应后端 商品保存接口）');});
+}
+function renderCat(){
+  $('#catBody').innerHTML=CATS.map(c=>'<tr><td>'+c.id+'</td><td>'+esc(c.name)+'</td><td>'+(c.level===1?'一级':'二级')+'</td><td>'+esc(c.parent)+'</td><td>'+c.sort+'</td><td>'+(c.status?'<span class="tag tag-green">启用</span>':'<span class="tag tag-gray">停用</span>')+'</td><td><button class="btn-text blue" onclick="toast(\'原型演示：编辑分类 '+esc(c.name)+'\')">编辑</button><button class="btn-text danger" onclick="toast(\'原型演示：删除校验（有商品引用时阻止）\')">删除</button></td></tr>').join('');
+}
+function openCatModal(){
+  showModal('新增分类',`
+  <div class="form-grid">
+    <div class="field"><label>分类名称</label><input placeholder="如：手机数码" /></div>
+    <div class="field"><label>层级</label><select><option>一级分类</option><option>二级分类</option></select></div>
+    <div class="field"><label>父级分类</label><select><option>—（无）</option>${CATS.filter(c=>c.level===1).map(c=>'<option>'+c.name+'</option>').join('')}</select></div>
+    <div class="field"><label>排序</label><input value="1"/></div>
+  </div>`,()=>{toast('原型演示：保存成功');});
+}
+
+/* ==================== 库存管理 ==================== */
+function renderStock(){
+  const kw=($('#stockKw').value||'').trim(),low=$('#stockLow').checked;
+  const rows=SKUS.filter(k=>{
+    const spu=SPUS.find(s=>s.id===k.spu);
+    const hit=!kw||String(k.id).includes(kw)||(spu&&spu.name.includes(kw));
+    return hit&&(!low||k.avail<20);
+  });
+  $('#stockBody').innerHTML=rows.map(k=>{
+    const spu=SPUS.find(s=>s.id===k.spu)||{name:'—',icon:'bag',color:'#F0F1F3'};
+    return '<tr><td>'+k.id+'</td><td><div class="cell-main">'+thumb(spu)+'<div><div class="name">'+esc(spu.name)+'</div><div class="desc">'+esc(k.name)+'</div></div></div></td>'+
+    '<td class="num '+(k.avail<20?'low-stock':'')+'">'+k.avail+'</td><td class="num">'+k.locked+'</td><td class="num">'+k.sold+'</td>'+
+    '<td><span class="tag tag-blue">'+k.avail+'</span> <span class="desc" style="color:var(--text-3)">与 DB 一致</span></td>'+
+    '<td><button class="btn-text blue" onclick="openStockModal('+k.id+')">调整库存</button></td></tr>';
+  }).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:30px">没有符合条件的 SKU</td></tr>';
+}
+function openStockModal(id){
+  const k=SKUS.find(x=>x.id===id);if(!k)return;
+  const spu=SPUS.find(s=>s.id===k.spu);
+  showModal('调整库存 · SKU '+id,`
+  <div class="field"><label>商品</label><input value="${esc(spu?spu.name:'')} / ${esc(k.name)}" disabled style="background:#FAFAFB;color:var(--text-2)"/></div>
+  <div class="form-grid">
+    <div class="field"><label>当前可售</label><input value="${k.avail}" disabled style="background:#FAFAFB"/></div>
+    <div class="field"><label>调整方式</label><select><option>增量调整（+/-）</option><option>设为绝对值</option></select></div>
+    <div class="field"><label>调整数量</label><input id="stockDelta" value="10"/></div>
+    <div class="field"><label>原因备注</label><input placeholder="如：补货入库" /></div>
+  </div>
+  <div style="color:var(--text-3);font-size:12px;margin-top:6px">提示：调整后同步刷新 Redis 预扣值（与 DB 保持一致）</div>`,()=>{
+    const d=parseInt($('#stockDelta').value||'0',10);
+    k.avail=Math.max(0,k.avail+d);renderStock();toast('库存已调整（原型演示）：SKU '+id+' 可售 → '+k.avail);
+  });
+}
+function preheat(){toast('原型演示：已触发 Redis 库存预热（对应 /internal/stock/preheat）');}
+
+/* ==================== 订单管理 ==================== */
+let orderSt='';
+function renderOrders(){
+  const kw=($('#orderKw').value||'').trim();
+  const list=ORDERS.filter(o=>(orderSt===''||String(o.status)===orderSt)&&(!kw||o.no.includes(kw)));
+  $('#orderBody').innerHTML=list.map(o=>{
+    const t=STATUS_TAG[o.status];
+    const ops='<button class="btn-text blue" onclick="openOrderModal(\''+o.no+'\')">详情</button>'+
+      (o.status===1?'<button class="btn-text" onclick="ship(\''+o.no+'\')">发货</button>':'');
+    return '<tr><td style="font-variant-numeric:tabular-nums">'+o.no+'</td><td>'+esc(o.user)+'</td><td>'+esc(o.items)+'</td>'+
+    '<td class="num">¥ '+o.amount+'</td><td><span class="tag '+t[0]+'">'+t[1]+'</span></td><td style="color:var(--text-2)">'+o.time+'</td><td>'+ops+'</td></tr>';
+  }).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:30px">没有符合条件的订单</td></tr>';
+  $('#orderTotal').textContent='共 '+list.length+' 条（原型演示数据）';
+}
+function ship(no){
+  const o=ORDERS.find(x=>x.no===no);if(!o)return;
+  o.status=2;renderOrders();toast('已发货：'+no+'（对应后端 发货接口）');
+}
+function openOrderModal(no){
+  const o=ORDERS.find(x=>x.no===no);if(!o)return;
+  const t=STATUS_TAG[o.status];
+  const steps=[
+    {txt:'创建订单',time:o.time,on:true},
+    {txt:o.status>=4? (o.status===5?'超时未支付，系统自动关闭':'用户取消订单'):'等待支付',time:o.time,on:o.status!==0},
+    {txt:'支付成功',time:o.status>=1?'2026-10-14 21:48:10':'' ,on:o.status>=1},
+    {txt:'商家发货',time:o.status>=2?'2026-10-14 22:10:00':'',on:o.status>=2}
+  ];
+  showModal('订单详情 · '+no,`
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <span class="tag ${t[0]}">${t[1]}</span><b style="font-size:16px">¥ ${o.amount}</b>
+  </div>
+  <table class="tbl" style="font-size:12px;margin-bottom:14px"><thead><tr><th>商品</th><th class="num">数量</th><th class="num">小计</th></tr></thead>
+  <tbody><tr><td>${esc(o.items)}</td><td class="num">—</td><td class="num">¥ ${o.amount}</td></tr></tbody></table>
+  <div style="color:var(--text-2);font-size:12px;margin-bottom:14px">收货信息：张三 138****0001 · 安徽省合肥市蜀山区创新大道 1 号</div>
+  <div class="timeline">${steps.map(s=>'<div class="tl-item'+(s.on?' on':'')+'"><div class="tl-dot"></div><div class="tl-txt">'+s.txt+'<small>'+s.time+'</small></div></div>').join('')}</div>
+  `,null,o.status===1?'发货':null,()=>{if(o.status===1)ship(no);});
+}
+
+/* ==================== 用户管理 ==================== */
+function renderUsers(){
+  const kw=($('#userKw').value||'').trim();
+  $('#userBody').innerHTML=USERS.filter(u=>!kw||u.username.includes(kw)||u.phone.includes(kw)).map(u=>
+    '<tr><td>'+u.id+'</td><td><b>'+esc(u.username)+'</b></td><td>'+esc(u.phone)+'</td><td style="color:var(--text-2)">'+u.reg+'</td><td class="num">'+u.orders+'</td>'+
+    '<td>'+(u.status?'<span class="tag tag-green">正常</span>':'<span class="tag tag-red">已禁用</span>')+'</td>'+
+    '<td>'+(u.status?'<button class="btn-text danger" onclick="toggleUser('+u.id+',0)">禁用</button>':'<button class="btn-text" onclick="toggleUser('+u.id+',1)">启用</button>')+'</td></tr>').join('');
+}
+function toggleUser(id,st){const u=USERS.find(x=>x.id===id);if(u){u.status=st;renderUsers();toast((st?'已启用：':'已禁用：')+u.username);}}
+
+/* ==================== 弹窗 ==================== */
+function showModal(title,bodyHtml,onOk,okText,okCb){
+  const root=$('#modalRoot');
+  root.innerHTML='<div class="mask" onclick="maskClose(event)"><div class="modal'+(bodyHtml.length>600?' wide':'')+'">'+
+    '<div class="modal-hd">'+title+'<button class="modal-x" onclick="closeModal()">✕</button></div>'+
+    '<div class="modal-bd">'+bodyHtml+'</div>'+
+    '<div class="modal-ft"><button class="btn btn-default" onclick="closeModal()">取消</button>'+
+    (okText? '<button class="btn btn-primary" onclick="window.__okCb&&window.__okCb()">'+okText+'</button>':'<button class="btn btn-primary" onclick="window.__okCb&&window.__okCb()">确定</button>')+'</div></div></div>';
+  window.__okCb=function(){closeModal();(okCb||onOk||function(){toast('原型演示：操作成功');})();};
+}
+function closeModal(){$('#modalRoot').innerHTML='';window.__okCb=null;}
+function maskClose(e){if(e.target===e.currentTarget)closeModal();}
+
+/* ==================== 初始化 ==================== */
+$('#goodsCat').innerHTML='<option value="">全部分类</option>'+CATS.filter(c=>c.level===1).map(c=>'<option>'+c.name+'</option>').join('');
+document.querySelectorAll('#orderTabs .tab').forEach(tab=>{
+  tab.onclick=()=>{document.querySelectorAll('#orderTabs .tab').forEach(t=>t.classList.remove('on'));tab.classList.add('on');orderSt=tab.dataset.st;renderOrders();};
+});
+renderGoods();renderCat();renderStock();renderOrders();renderUsers();renderDashboard();
+</script>
+</body>
+</html>

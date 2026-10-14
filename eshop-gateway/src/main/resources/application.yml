@@ -62,6 +62,32 @@ spring:
             - Path=/api/pay/**
           filters:
             - StripPrefix=2
+        # ===== 管理后台（P3）：/api/admin/{domain}/** → 各服务 /admin/{domain}/**
+        # 鉴权：网关对 /api/admin/** 校验 role=admin 的 JWT（仅 auth/login 白名单）
+        - id: admin-user
+          uri: lb://eshop-user
+          predicates:
+            - Path=/api/admin/auth/**,/api/admin/user/**
+          filters:
+            - RewritePath=/api/admin/(?<segment>.*), /admin/$\{segment}
+        - id: admin-product
+          uri: lb://eshop-product
+          predicates:
+            - Path=/api/admin/product/**
+          filters:
+            - RewritePath=/api/admin/(?<segment>.*), /admin/$\{segment}
+        - id: admin-stock
+          uri: lb://eshop-stock
+          predicates:
+            - Path=/api/admin/stock/**
+          filters:
+            - RewritePath=/api/admin/(?<segment>.*), /admin/$\{segment}
+        - id: admin-order
+          uri: lb://eshop-order
+          predicates:
+            - Path=/api/admin/order/**,/api/admin/dashboard
+          filters:
+            - RewritePath=/api/admin/(?<segment>.*), /admin/$\{segment}
 
 eshop:
   jwt:

@@ -168,6 +168,12 @@ public class ProductCacheService {
         }
     }
 
+    /** 新增商品上架时补入布隆过滤器（否则新 spuId 会被布隆误判为不存在） */
+    public void addSpuToBloom(Long spuId) {
+        bloomFilter().add(spuId);
+        log.info("[缓存] 布隆过滤器已补入：spuId={}", spuId);
+    }
+
     // ==================== 预热 ====================
 
     /**
