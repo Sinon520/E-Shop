@@ -21,6 +21,7 @@ Thumbs.db
 # ---------- Logs ----------
 *.log
 logs/
+build-*.txt
 
 # ---------- WorkBuddy 本地工作数据 ----------
 .workbuddy/
