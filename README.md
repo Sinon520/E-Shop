@@ -4,7 +4,7 @@
 
 > **技术栈**：JDK 21 · Spring Boot 3.5 · Spring Cloud 2025.0 · Spring Cloud Alibaba 2025.0 · Nacos 3 · MySQL 8 · Redis（Redisson）· RocketMQ · Seata · Sentinel · Elasticsearch 8 + IK 分词 · Vue 3 + Vite + Pinia（C 端）/ Element Plus + ECharts（管理端）
 >
-> **当前状态**：**核心链路 + 技术亮点 + 管理后台 + ES 搜索全部完成**，全链路可端到端演示；仅剩 Docker Compose 编排未做。
+> **当前状态**：**全栈完成并经全量验收** —— 核心链路、五大技术亮点、管理后台、ES 搜索全部落地；Docker Compose 编排与在线演示按计划暂缓，以 GitHub 仓库为主要交付形式。
 
 ## 技术亮点
 
@@ -104,4 +104,4 @@ cd eshop-admin && npm install && npm run dev   # 管理端 http://127.0.0.1:5174
 | P1 核心链路（浏览→支付全流程 + C 端前端） | ✅ 2026-10-14（tag `p1`） |
 | P2 技术亮点（缓存/MQ关单/Seata/Lua预扣/Sentinel/压测） | ✅ 2026-10-14（tag `p2`） |
 | P3 管理后台（原型 → 后端 admin 体系 → eshop-admin 前端） | ✅ 2026-10-14 |
-| P4 打磨上线（ES 搜索 ✅ / Docker Compose ⏳ / 内网穿透 ⏳） | 进行中 |
+| P4 打磨（ES 搜索 + IK、C 端接入、文档收官） | ✅ 2026-10-15（Compose/穿透按需暂缓） |
