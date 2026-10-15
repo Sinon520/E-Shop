@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: eshop-product
+  # 敏感口令统一从项目根 application-local.yml 注入（该文件已被 .gitignore 排除，不随仓库分发）
+  config:
+    import: optional:file:./application-local.yml
   cloud:
     nacos:
       discovery:
@@ -12,7 +15,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://127.0.0.1:3306/shop_product?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: root
-    password: 123456
+    password: ${MYSQL_PASSWORD}
   data:
     redis:
       host: 127.0.0.1

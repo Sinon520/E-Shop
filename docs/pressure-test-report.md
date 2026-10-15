@@ -109,7 +109,7 @@
 # 前置：全套服务 + 中间件运行（见 docs/environment-setup.md）
 
 # 1. 重置压测基线（sku103 库存 50 件 + Redis 预热）
-mysql -uroot -p123456 -e "UPDATE shop_stock.t_stock SET available=50, locked=0, sold=0, version=0 WHERE sku_id=103;"
+mysql -uroot -p -e "UPDATE shop_stock.t_stock SET available=50, locked=0, sold=0, version=0 WHERE sku_id=103;"
 curl -X POST http://127.0.0.1:8083/internal/stock/preheat
 
 # 2. 场景 1（网关放开限流档启动）

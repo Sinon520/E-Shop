@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: eshop-gateway
+  # 敏感口令统一从项目根 application-local.yml 注入（该文件已被 .gitignore 排除，不随仓库分发）
+  config:
+    import: optional:file:./application-local.yml
   cloud:
     nacos:
       discovery:
@@ -92,7 +95,8 @@ spring:
 eshop:
   jwt:
     # 与 eshop-user 保持一致（HS256 ≥ 32 字节）；生产移入配置中心并更换
-    secret: eshop-2026-dev-only-jwt-secret-key-ChangeMeInProduction!
+    # 真实值由项目根 application-local.yml 注入（.gitignore 已排除）
+    secret: ${ESHOP_JWT_SECRET}
   sentinel:
     # 下单接口 QPS 限流阈值：默认 3（演示档）；压测放开示例：
     # --eshop.sentinel.order-create-qps=100000

@@ -29,3 +29,4 @@ build-*.txt
 # ---------- 本地运行残留 ----------
 dump.rdb
 redis_6379.pid
+application-local.yml

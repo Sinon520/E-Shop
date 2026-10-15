@@ -14,7 +14,7 @@
 | 旧版本目录 | `D:\springcloudalibabatool\nacos-server-2.3.2`（保留备回退，当前未运行） |
 | 客户端端口 | **8848**（HTTP / 客户端）；**9848**（gRPC，=8848+1000，自动） |
 | 控制台 | **http://127.0.0.1:8080**（本地开发已关闭控制台登录，直接访问） |
-| 持久化 | MySQL 库 **`nacos3`**（root/123456；3.x 全新表结构，**勿复用**旧库 `nacos2.3.2`） |
+| 持久化 | MySQL 库 **`nacos3`**（root 账号（口令见本地 application-local.yml，不入库）；3.x 全新表结构，**勿复用**旧库 `nacos2.3.2`） |
 | 运行状态 | ✅ 已验证：8848/9848/8080 三端口监听，控制台 HTTP 200 |
 
 ### 启动方式
@@ -57,7 +57,7 @@ powershell -ExecutionPolicy Bypass -File D:\springcloudalibabatool\start-nacos-3
 
 ## 2. MySQL ✅ 已就绪
 
-- 8.0.37，Windows 服务 `MySQL80`（开机自启）；root / 123456
+- 8.0.37，Windows 服务 `MySQL80`（开机自启）；root 口令见本地 `application-local.yml`（已 gitignore，不入仓库）
 - 业务库：`shop_user` / `shop_product` / `shop_stock` / `shop_order` / `shop_pay`（DDL 已备好于 `sql/`，待执行）
 - 中间件库：`nacos3`
 
@@ -103,3 +103,25 @@ powershell -ExecutionPolicy Bypass -File D:\springcloudalibabatool\start-nacos-3
 | 9000 | eshop-gateway |
 | 8081 ~ 8086 | user / product / stock / cart / order / pay |
 | 5173 / 5174 | 前端 dev：商城 C 端 / 管理后台 |
+
+## 敏感口令注入（P4 收官约定）
+
+仓库内所有 `application.yml` 均不含真实口令（占位符：`${MYSQL_PASSWORD}`、`${ESHOP_JWT_SECRET}`、`${NACOS_USERNAME}`、`${NACOS_PASSWORD}`）。真实值统一放在**项目根** `application-local.yml`（已被 `.gitignore` 排除，不随仓库分发）：
+
+```yaml
+spring:
+  datasource:
+    password: <你的 MySQL root 口令>
+
+seata:
+  registry:
+    nacos:
+      username: <Nacos 账号>
+      password: <Nacos 口令>
+
+eshop:
+  jwt:
+    secret: <HS256 密钥，≥32 字节；user 与 gateway 必须一致>
+```
+
+注意：`spring.config.import: optional:file:./application-local.yml` 按**运行时工作目录**解析——请在项目根目录启动各服务，否则占位符无法解析会导致启动失败。

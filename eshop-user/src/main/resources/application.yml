@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: eshop-user
+  # 敏感口令统一从项目根 application-local.yml 注入（该文件已被 .gitignore 排除，不随仓库分发）
+  config:
+    import: optional:file:./application-local.yml
   cloud:
     nacos:
       discovery:
@@ -12,7 +15,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://127.0.0.1:3306/shop_user?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: root
-    password: 123456
+    password: ${MYSQL_PASSWORD}
 
 mybatis-plus:
   configuration:
@@ -28,7 +31,8 @@ mybatis-plus:
 eshop:
   jwt:
     # 本地开发密钥（HS256 要求 ≥ 32 字节）；须与 eshop-gateway 保持一致；生产移入配置中心并更换
-    secret: eshop-2026-dev-only-jwt-secret-key-ChangeMeInProduction!
+    # 真实值由项目根 application-local.yml 注入（.gitignore 已排除）
+    secret: ${ESHOP_JWT_SECRET}
     expire-seconds: 7200
 
 springdoc:

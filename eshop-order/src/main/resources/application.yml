@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: eshop-order
+  # 敏感口令统一从项目根 application-local.yml 注入（该文件已被 .gitignore 排除，不随仓库分发）
+  config:
+    import: optional:file:./application-local.yml
   cloud:
     nacos:
       discovery:
@@ -17,7 +20,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://127.0.0.1:3306/shop_order?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: root
-    password: 123456
+    password: ${MYSQL_PASSWORD}
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
@@ -64,8 +67,9 @@ seata:
       application: seata-server
       server-addr: 127.0.0.1:8848
       group: SEATA_GROUP
-      username: nacos
-      password: nacos
+      # Nacos 认证账号由项目根 application-local.yml 注入
+      username: ${NACOS_USERNAME}
+      password: ${NACOS_PASSWORD}
 
 springdoc:
   api-docs:

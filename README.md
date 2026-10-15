@@ -41,6 +41,8 @@
 
 前置依赖（详见 [环境手册](docs/environment-setup.md)）：JDK 21、Node 18+、MySQL 8、Redis、Nacos 3.0.3、RocketMQ 5（order 服务延迟关单用）、Seata Server 2.5（下单分布式事务用）、Elasticsearch 8.18 + IK（搜索用）。
 
+> 🔐 **配置说明**：仓库内不含任何真实口令——各服务 `application.yml` 使用占位符，真实值由项目根的 `application-local.yml`（已被 `.gitignore` 排除）注入。首次运行请在项目根创建该文件（模板见 [环境手册](docs/environment-setup.md)），并在项目根目录启动服务。`sinon/123456`、`admin/admin123` 为仓库内置的演示账号。
+
 ```bash
 # ========== 1. 数据库 ==========
 mysql -uroot -p --default-character-set=utf8mb4 < sql/00-create-databases.sql
