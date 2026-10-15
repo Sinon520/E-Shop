@@ -25,3 +25,7 @@ build-*.txt
 
 # ---------- WorkBuddy 本地工作数据 ----------
 .workbuddy/
+
+# ---------- 本地运行残留 ----------
+dump.rdb
+redis_6379.pid

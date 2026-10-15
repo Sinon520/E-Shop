@@ -9,8 +9,10 @@ import com.eshop.common.dto.AddressDTO;
 import com.eshop.common.dto.OrderForPayDTO;
 import com.eshop.common.dto.SkuInfoDTO;
 import com.eshop.common.dto.StockOpRequest;
+import com.eshop.common.dto.UserBaseDTO;
 import com.eshop.common.exception.BizException;
 import com.eshop.common.result.PageResult;
+import com.eshop.common.result.Result;
 import com.eshop.common.result.ResultCode;
 import com.eshop.common.util.ResultHelper;
 import com.eshop.order.client.CartClient;
@@ -46,6 +48,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
@@ -194,7 +197,7 @@ public class OrderService {
         Map<String, List<OrderItem>> itemsMap = loadItemsMap(orders.stream().map(Order::getOrderNo).toList());
 
         List<OrderVO> list = orders.stream()
-                .map(order -> toListVO(order, itemsMap.getOrDefault(order.getOrderNo(), List.of())))
+                .map(order -> toListVO(order, itemsMap.getOrDefault(order.getOrderNo(), List.of()), Map.of()))
                 .toList();
         return PageResult.of(result.getTotal(), safePage, safeSize, list);
     }
@@ -331,8 +334,9 @@ public class OrderService {
                         .orderByDesc(Order::getId));
         List<Order> orders = result.getRecords();
         Map<String, List<OrderItem>> itemsMap = loadItemsMap(orders.stream().map(Order::getOrderNo).toList());
+        Map<Long, String> usernameMap = loadUsernames(orders);
         List<OrderVO> list = orders.stream()
-                .map(order -> toListVO(order, itemsMap.getOrDefault(order.getOrderNo(), List.of())))
+                .map(order -> toListVO(order, itemsMap.getOrDefault(order.getOrderNo(), List.of()), usernameMap))
                 .toList();
         return PageResult.of(result.getTotal(), safePage, safeSize, list);
     }
@@ -511,7 +515,7 @@ public class OrderService {
         return dateTime == null ? "" : dateTime.format(DATETIME_FORMATTER);
     }
 
-    private OrderVO toListVO(Order order, List<OrderItem> items) {
+    private OrderVO toListVO(Order order, List<OrderItem> items, Map<Long, String> usernameMap) {
         OrderVO vo = new OrderVO();
         vo.setOrderNo(order.getOrderNo());
         vo.setStatus(order.getStatus());
@@ -520,8 +524,35 @@ public class OrderService {
         vo.setPayAmount(order.getPayAmount());
         vo.setCreateTime(formatDateTime(order.getCreateTime()));
         vo.setReceiverName(order.getReceiverName());
+        vo.setUsername(usernameMap.get(order.getUserId()));
         vo.setItems(items.stream().map(this::toItemVO).toList());
         return vo;
+    }
+
+    /**
+     * 管理端：批量回填下单用户名（user 服务不可用时降级为空映射，不影响订单列表）
+     */
+    private Map<Long, String> loadUsernames(List<Order> orders) {
+        List<Long> userIds = orders.stream()
+                .map(Order::getUserId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (userIds.isEmpty()) {
+            return Map.of();
+        }
+        try {
+            Result<List<UserBaseDTO>> result = userClient.batchUsers(userIds);
+            if (result == null || result.getData() == null) {
+                return Map.of();
+            }
+            return result.getData().stream()
+                    .collect(Collectors.toMap(UserBaseDTO::getUserId,
+                            dto -> dto.getUsername() == null ? "" : dto.getUsername(), (a, b) -> a));
+        } catch (Exception e) {
+            log.warn("批量查询订单用户名失败（降级为空）: {}", e.getMessage());
+            return Map.of();
+        }
     }
 
     private OrderItemVO toItemVO(OrderItem item) {

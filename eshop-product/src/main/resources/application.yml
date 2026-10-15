@@ -30,6 +30,12 @@ eshop:
     lock-lease-millis: 10000            # 互斥锁重建：锁租约（防死锁）
     double-delete-delay-millis: 2000     # 延迟双删：第二次删除的延迟（生产常用 0.5~1s；本地留有充裕观察窗口）
     preheat-enabled: true               # 启动时预热（布隆过滤器 + 详情缓存）
+  es:
+    enabled: true                       # ES 搜索开关（false 时不创建客户端，搜索接口直接走 DB 降级）
+    host: 127.0.0.1:9200
+    scheme: http
+    index: eshop_spu
+    startup-reindex: true               # 启动时异步全量重建索引（小数据量下保证 ES 与 DB 一致）
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml

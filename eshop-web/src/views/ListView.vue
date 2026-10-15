@@ -1,6 +1,10 @@
 <template>
   <section>
-    <div class="crumb"><a @click="router.push('/')">首页</a><span>/</span>全部商品</div>
+    <div class="crumb">
+      <a @click="router.push('/')">首页</a><span>/</span>
+      <template v-if="keyword">搜索「{{ keyword }}」</template>
+      <template v-else>全部商品</template>
+    </div>
 
     <div class="filter">
       <div class="filter-row">
@@ -54,12 +58,12 @@ import Pager from '../components/Pager.vue'
 const route = useRoute()
 const router = useRouter()
 
-const sorts = [
-  { k: 'default', t: '综合' },
+const sorts = computed(() => [
+  { k: 'default', t: keyword.value ? '相关度' : '综合' },
   { k: 'sales', t: '销量优先' },
   { k: 'priceAsc', t: '价格 ↑' },
   { k: 'priceDesc', t: '价格 ↓' }
-]
+])
 
 const categories = ref([])
 const list = ref([])
@@ -69,6 +73,8 @@ const size = 12
 
 const query = computed(() => route.query)
 const page = computed(() => Number(route.query.page) || 1)
+/** 有搜索词时走 ES 搜索接口（相关度排序），否则走分类浏览列表 */
+const keyword = computed(() => (route.query.keyword || '').trim())
 
 /** query 变化（分类/排序/搜索/翻页）统一走 router，由 watcher 触发请求 */
 function setQuery(patch) {
@@ -87,13 +93,16 @@ function setPage(p) {
 async function load() {
   loading.value = true
   try {
-    const data = await productApi.spuPage({
+    const params = {
       page: page.value,
       size,
       categoryId: route.query.categoryId || undefined,
-      keyword: route.query.keyword || undefined,
+      keyword: keyword.value || undefined,
       sort: route.query.sort || undefined
-    })
+    }
+    const data = keyword.value
+      ? await productApi.spuSearch(params)
+      : await productApi.spuPage(params)
     list.value = data.list
     total.value = data.total
   } finally {

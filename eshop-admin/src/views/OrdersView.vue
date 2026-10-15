@@ -25,8 +25,11 @@
       <el-table-column label="订单号" min-width="220">
         <template #default="{ row }"><span class="num">{{ row.orderNo }}</span></template>
       </el-table-column>
-      <el-table-column label="收货人" width="110">
-        <template #default="{ row }">{{ row.receiverName || '—' }}</template>
+      <el-table-column label="用户" width="110">
+        <template #default="{ row }">
+          <span v-if="row.username">{{ row.username }}</span>
+          <span v-else style="color: var(--text-3)">{{ row.receiverName || '—' }}</span>
+        </template>
       </el-table-column>
       <el-table-column label="商品" min-width="220">
         <template #default="{ row }">

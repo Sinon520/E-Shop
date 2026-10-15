@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.eshop.common.dto.UserBaseDTO;
 import com.eshop.common.exception.BizException;
 import com.eshop.common.result.PageResult;
 import com.eshop.common.result.ResultCode;
@@ -16,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * 管理端用户服务（P3）：用户分页 / 禁用启用
@@ -29,6 +32,27 @@ public class AdminUserService {
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final UserMapper userMapper;
+
+    /**
+     * 按 userIds 批量查用户基础信息（供 order 服务回填订单用户名；查不到的 ID 不返回）
+     */
+    public List<UserBaseDTO> batchBase(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return List.of();
+        }
+        List<Long> distinctIds = userIds.stream().filter(Objects::nonNull).distinct().limit(200).toList();
+        if (distinctIds.isEmpty()) {
+            return List.of();
+        }
+        return userMapper.selectByIds(distinctIds).stream()
+                .map(user -> {
+                    UserBaseDTO dto = new UserBaseDTO();
+                    dto.setUserId(user.getId());
+                    dto.setUsername(user.getUsername());
+                    return dto;
+                })
+                .toList();
+    }
 
     /**
      * 用户分页（keyword 匹配用户名 / 昵称 / 手机号）

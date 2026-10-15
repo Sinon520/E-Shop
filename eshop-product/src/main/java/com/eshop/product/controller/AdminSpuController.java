@@ -1,15 +1,19 @@
 package com.eshop.product.controller;
 
+import com.eshop.common.exception.BizException;
 import com.eshop.common.result.PageResult;
 import com.eshop.common.result.Result;
+import com.eshop.common.result.ResultCode;
 import com.eshop.product.dto.SpuSaveRequest;
 import com.eshop.product.dto.SpuStatusRequest;
 import com.eshop.product.service.AdminProductService;
+import com.eshop.product.service.SpuSearchService;
 import com.eshop.product.vo.AdminSpuVO;
 import com.eshop.product.vo.SpuDetailVO;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,13 +26,14 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 管理端商品接口（管理后台，P3；网关校验 role=admin）
  */
-@Tag(name = "管理端-商品", description = "商品列表 / 上下架 / 新增编辑")
+@Tag(name = "管理端-商品", description = "商品列表 / 上下架 / 新增编辑 / 搜索索引")
 @RestController
 @RequestMapping("/admin/product/spu")
 @RequiredArgsConstructor
 public class AdminSpuController {
 
     private final AdminProductService adminProductService;
+    private final ObjectProvider<SpuSearchService> searchServiceProvider;
 
     /** 商品分页（含下架） */
     @GetMapping("/page")
@@ -64,5 +69,15 @@ public class AdminSpuController {
     public Result<Void> update(@PathVariable Long id, @RequestBody @Valid SpuSaveRequest request) {
         adminProductService.updateSpu(id, request);
         return Result.success();
+    }
+
+    /** 全量重建搜索索引（P4 运维接口；返回同步的文档数） */
+    @PostMapping("/search/reindex")
+    public Result<Long> reindexSearch() throws Exception {
+        SpuSearchService searchService = searchServiceProvider.getIfAvailable();
+        if (searchService == null) {
+            throw new BizException(ResultCode.VALIDATE_FAILED.getCode(), "ES 搜索未启用（eshop.es.enabled=false）");
+        }
+        return Result.success(searchService.reindexAll());
     }
 }

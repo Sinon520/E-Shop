@@ -20,6 +20,7 @@ import com.eshop.product.vo.AdminSpuVO;
 import com.eshop.product.vo.SpuDetailVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -46,6 +47,7 @@ public class AdminProductService {
     private final CategoryMapper categoryMapper;
     private final ProductCacheService productCacheService;
     private final ProductService productService;
+    private final ObjectProvider<SpuSearchService> searchServiceProvider;
 
     /**
      * 商品详情（含 SKU 明细，不限状态；供管理端 SKU 展开 / 编辑回填）
@@ -92,6 +94,7 @@ public class AdminProductService {
         if (status == 1) {
             productCacheService.addSpuToBloom(spuId);
         }
+        syncSearch(spuId);
         log.info("管理端{}商品: spuId={}", status == 1 ? "上架" : "下架", spuId);
     }
 
@@ -127,6 +130,7 @@ public class AdminProductService {
         }
         log.info("管理端新增商品: spuId={}, name={}, skus={}", spu.getId(), spu.getName(),
                 request.getSkus() == null ? 0 : request.getSkus().size());
+        syncSearch(spu.getId());
         return spu.getId();
     }
 
@@ -144,6 +148,7 @@ public class AdminProductService {
                 .set(Spu::getDetail, request.getDetail() == null ? "" : request.getDetail())
                 .eq(Spu::getId, spuId));
         productCacheService.evictSpuDetail(spuId, true);
+        syncSearch(spuId);
         log.info("管理端编辑商品: spuId={}", spuId);
     }
 
@@ -206,6 +211,14 @@ public class AdminProductService {
     }
 
     // ==================== 内部工具 ====================
+
+    /** 商品变更后同步 ES 搜索文档（ES 未启用时为空操作；同步失败由 SpuSearchService 告警，不阻断主流程） */
+    private void syncSearch(Long spuId) {
+        SpuSearchService searchService = searchServiceProvider.getIfAvailable();
+        if (searchService != null) {
+            searchService.syncSpu(spuId);
+        }
+    }
 
     /** 回填分类名（一次批量查询，避免 N+1） */
     private void fillCategoryNames(List<AdminSpuVO> list) {

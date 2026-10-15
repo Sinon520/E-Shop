@@ -29,13 +29,16 @@ export const addressApi = {
   }
 }
 
-/** 商品（契约 §3） */
+/** 商品（契约 §3；P4 搜索走 ES + IK 分词，后端异常自动降级 DB） */
 export const productApi = {
   categories() {
     return request.get('/product/categories')
   },
   spuPage(params) {
     return request.get('/product/spu/page', { params })
+  },
+  spuSearch(params) {
+    return request.get('/product/spu/search', { params })
   },
   spuDetail(id) {
     return request.get(`/product/spu/${id}`)

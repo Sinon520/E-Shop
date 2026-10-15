@@ -266,3 +266,7 @@
 > **P3 原型完成（2026-10-14 深夜）**：`prototype/admin.html`（登录 + 6 模块：看板/商品/分类/库存/订单/用户，深色侧边栏 + 品牌橙 + 仿 Element Plus 组件），用户已确认。
 >
 > **P3 后端完成（2026-10-14 深夜）**：管理员独立账号体系（`t_admin` + JWT `role=admin` 声明，网关对 `/api/admin/**` 强制校验，普通用户 403）；**admin 接口**：看板统计（今日/累计成交、状态分布、7 日趋势、热销榜——order 库聚合）、商品管理（全量分页含下架 / 上下架（**联动 P2 缓存失效**）/ 新增含 SKU）、分类 CRUD（含删除保护）、库存管理（Redis 预扣值双侧核对 / 调整库存（CAS + 流水 type=4 + Redis 同步））、订单管理（全量分页 / 详情 / **发货闭环**）、用户管理（分页 / 禁用启用）。网关新增 4 条 `/api/admin/**` 路由（RewritePath → `/admin/**`）。验证：`scripts/smoke-test-admin.ps1` **21/21**（含 401/403/1002 负例 + 发货闭环 + 库存调整双侧核对）。**待办**：eshop-admin 前端工程（Vue3 + Element Plus + ECharts）按原型实现 + 联调。
+>
+> **P3 管理后台收官（2026-10-15）**：阶段二 `eshop-admin` 前端工程完成——Vue 3 + Element Plus + ECharts（端口 5174），按原型 1:1 实现登录 + 数据看板（统计卡 / ECharts 折线环形 / 热销榜 / 待办跳转）、商品（筛选 / SKU 展开 / 上下架 / 新增编辑）、分类、库存（Redis 双侧核对 / 调整 / 预热）、订单（七状态 tabs / 详情时间线 / 发货）、用户六模块。**配套后端小改**：管理端 SPU 详情接口（含 SKU 不限状态）、OrderVO 补收货人、跨服务用户名映射（`/internal/users/batch` + Feign 回填 + 异常降级）。验收：后端冒烟 admin 21/21 + 基础四域 + 订单支付全过；前端 `admin-ui-smoke.mjs` **14/14**、`admin-e2e.mjs` **9/9**（C 端下单→支付→后台发货 status=2 全闭环）。提交 `c00a690`。
+>
+> **P4 ES 搜索完成（2026-10-15）**：Elasticsearch 8.18.0 + IK 分词器接入 eshop-product——索引 `eshop_spu`（multi_match name^3/categoryName^2/brandName/detail 加权，相关度/销量/价格排序，status 过滤上架）；商品新增/编辑/上下架**实时同步**，启动异步全量重建，管理端 reindex 运维接口；**ES 故障自动降级 DB like 查询**（接口契约不变，C 端无感）；C 端列表页搜索已切换 ES 链路（相关度排序）。验收：`scripts/smoke-test-es.ps1` **21/21**（分词 / reindex 一致性 / 加权 top1 / 排序单调 / 分类过滤 / 上下架与新增实时同步 / 下架不可见）。**P4 剩余**：Docker Compose 一键起栈、内网穿透演示。
