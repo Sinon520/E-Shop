@@ -30,3 +30,11 @@ build-*.txt
 dump.rdb
 redis_6379.pid
 application-local.yml
+
+# ---------- Python / AI 服务 ----------
+eshop-ai/.env
+eshop-ai/.venv/
+eshop-ai/data/embed_cache.json
+__pycache__/
+*.py[cod]
+.pytest_cache/

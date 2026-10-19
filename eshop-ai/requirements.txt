@@ -1,0 +1,23 @@
+# E-Shop AI 客服服务依赖（Python 3.14 验证）
+# 装包务必指定阿里云源：
+#   pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com
+
+fastapi==0.146.0
+uvicorn==0.52.4
+
+langchain==1.3.16
+langchain-core==1.6.0
+langchain-openai==1.6.0
+
+langgraph==1.2.11
+langgraph-checkpoint==4.2.0
+langgraph-checkpoint-redis==0.5.2
+langgraph-prebuilt==1.1.0
+
+pydantic==2.13.4
+pydantic-settings==2.15.0
+python-dotenv==1.2.2
+
+httpx==0.28.1
+redis==8.1.0
+elasticsearch==8.19.3

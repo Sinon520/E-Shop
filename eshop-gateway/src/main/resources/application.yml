@@ -65,6 +65,18 @@ spring:
             - Path=/api/pay/**
           filters:
             - StripPrefix=2
+        # ===== AI 客服（P5）：Python 服务（FastAPI + LangGraph），不注册 Nacos，走静态 URI =====
+        # 鉴权：可选——带有效 token 注入 X-User-Id，未登录也放行（游客可问政策，登录才能查订单）
+        # response-timeout 放大到 60s，给流式输出留余量（P5-2 SSE）
+        - id: eshop-ai
+          uri: http://127.0.0.1:8087
+          predicates:
+            - Path=/api/ai/**
+          filters:
+            - StripPrefix=2
+          metadata:
+            connect-timeout: 3000
+            response-timeout: 60000
         # ===== 管理后台（P3）：/api/admin/{domain}/** → 各服务 /admin/{domain}/**
         # 鉴权：网关对 /api/admin/** 校验 role=admin 的 JWT（仅 auth/login 白名单）
         - id: admin-user
@@ -101,6 +113,8 @@ eshop:
     # 下单接口 QPS 限流阈值：默认 3（演示档）；压测放开示例：
     # --eshop.sentinel.order-create-qps=100000
     order-create-qps: 3
+    # AI 客服 QPS：默认 2。匿名可访问的 LLM 接口必须掐住，否则会被白嫖 token
+    ai-chat-qps: 2
 
 logging:
   level:

@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { toast } from '../utils/toast'
 
-const TOKEN_KEY = 'eshop_token'
+export const TOKEN_KEY = 'eshop_token'
 
 /**
  * 统一请求封装（对接网关 /api，开发态由 Vite 代理转发到 9000）

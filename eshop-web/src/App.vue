@@ -6,6 +6,7 @@
   <AppFooter />
   <LoginModal />
   <ToastHost />
+  <ChatWidget />
 </template>
 
 <script setup>
@@ -14,6 +15,7 @@ import AppHeader from './components/AppHeader.vue'
 import AppFooter from './components/AppFooter.vue'
 import LoginModal from './components/LoginModal.vue'
 import ToastHost from './components/ToastHost.vue'
+import ChatWidget from './components/ChatWidget.vue'
 import { useAuthStore } from './stores/auth'
 import { useCartStore } from './stores/cart'
 

@@ -1,4 +1,4 @@
-import request from './request'
+import request, { TOKEN_KEY } from './request'
 
 /** 认证与用户（契约 §2） */
 export const userApi = {
@@ -100,5 +100,83 @@ export const payApi = {
   },
   callback(data) {
     return request.post('/pay/callback', data)
+  }
+}
+
+/**
+ * AI 客服（P5）
+ * 走网关 /api/ai/**，可选鉴权：带 token 时网关会注入身份，游客也能问政策类问题。
+ * - chat：非流式，脚本与降级用
+ * - chatStream：SSE 流式。EventSource 只支持 GET，所以用 fetch + ReadableStream 自己解析
+ */
+export const aiApi = {
+  chat(data) {
+    return request.post('/ai/chat', data, { timeout: 45000 })
+  },
+
+  async chatStream(data, { onMeta, onStatus, onDelta, onDone, onError, signal } = {}) {
+    const token = localStorage.getItem(TOKEN_KEY)
+    const resp = await fetch('/api/ai/chat/stream', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(data),
+      signal
+    })
+
+    if (!resp.ok || !resp.body) {
+      throw new Error(`HTTP ${resp.status}`)
+    }
+
+    const reader = resp.body.getReader()
+    const decoder = new TextDecoder('utf-8')
+    let buffer = ''
+
+    const dispatch = (event) => {
+      switch (event.type) {
+        case 'meta':
+          onMeta?.(event)
+          break
+        case 'status':
+          onStatus?.(event.text || '')
+          break
+        case 'delta':
+          onDelta?.(event.text || '')
+          break
+        case 'done':
+          onDone?.(event)
+          break
+        case 'error':
+          onError?.(event.message || '客服暂时不可用')
+          break
+        default:
+          break
+      }
+    }
+
+    while (true) {
+      const { value, done } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+
+      let cut
+      while ((cut = buffer.indexOf('\n\n')) >= 0) {
+        const raw = buffer.slice(0, cut)
+        buffer = buffer.slice(cut + 2)
+
+        const line = raw.split('\n').find((l) => l.startsWith('data:'))
+        if (!line) continue
+
+        try {
+          dispatch(JSON.parse(line.slice(5).trim()))
+        } catch (e) {
+          /* 半包或心跳，忽略 */
+        }
+      }
+    }
   }
 }

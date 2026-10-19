@@ -62,6 +62,10 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
     private static final List<String> WHITELIST_POST_PATHS =
             List.of("/api/user/auth/register", "/api/user/auth/login");
 
+    /** AI 客服对话（P5）：可选鉴权——带有效 token 则注入身份，未登录也放行 */
+    private static final List<String> AI_CHAT_PATHS =
+            List.of("/api/ai/chat", "/api/ai/chat/stream");
+
     /** 免鉴权：GET 前缀（商品浏览、库存查询） */
     private static final List<String> WHITELIST_GET_PREFIXES =
             List.of("/api/product/", "/api/stock/");
@@ -89,6 +93,11 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         // 内部接口统一拦截（优先于白名单判断，防止 GET /api/product/internal/** 之类被白名单放行）
         if (path.contains(INTERNAL_PATH_MARK)) {
             return notFound(exchange, path);
+        }
+
+        // AI 客服对话：可选鉴权（登录用户注入身份，游客放行）
+        if (HttpMethod.POST.equals(method) && AI_CHAT_PATHS.contains(path)) {
+            return filterOptionalAuth(exchange, chain, requestBuilder, request);
         }
 
         // 管理员登录白名单
@@ -133,6 +142,25 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             return HEALTH_PATTERN.matcher(path).matches();
         }
         return false;
+    }
+
+    /**
+     * 可选鉴权（P5）：有有效 token 就注入 X-User-Id，没有也放行。
+     * <p>
+     * 用于 AI 客服这类「游客可问政策、登录才能查订单」的接口——
+     * 下游服务据此裁剪能力，而不是直接 401 把游客挡在门外。
+     */
+    private Mono<Void> filterOptionalAuth(ServerWebExchange exchange, GatewayFilterChain chain,
+                                          ServerHttpRequest.Builder requestBuilder,
+                                          ServerHttpRequest request) {
+        String authorization = request.getHeaders().getFirst(HEADER_AUTHORIZATION);
+        if (authorization != null && authorization.startsWith(TOKEN_PREFIX)) {
+            Long userId = jwtVerifier.verifyAndGetUserId(authorization.substring(TOKEN_PREFIX.length()));
+            if (userId != null) {
+                requestBuilder.header(HEADER_USER_ID, String.valueOf(userId));
+            }
+        }
+        return chain.filter(exchange.mutate().request(requestBuilder.build()).build());
     }
 
     /** 管理端鉴权：token 有效且 role=admin 才放行；透传管理员 ID 至 X-User-Id（P3） */

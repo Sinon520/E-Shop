@@ -33,34 +33,57 @@ public class SentinelGatewayConfig {
     /** 自定义 API 分组名：下单接口 */
     private static final String API_ORDER_CREATE = "order-create";
 
+    /** 自定义 API 分组名：AI 客服（P5） */
+    private static final String API_AI_CHAT = "ai-chat";
+
     /** 下单接口限流阈值（QPS）：默认 3（演示值）；压测时通过启动参数放开 */
     @Value("${eshop.sentinel.order-create-qps:3}")
     private double orderCreateQps;
+
+    /** AI 客服限流阈值（QPS）：默认 2。匿名可访问的 LLM 接口必须限流，否则就是免费给别人刷 token */
+    @Value("${eshop.sentinel.ai-chat-qps:2}")
+    private double aiChatQps;
 
     @PostConstruct
     public void init() {
         initApiDefinitions();
         initGatewayRules();
         initBlockHandler();
-        log.info("[Sentinel] 网关限流已装配：{} QPS ≤ {}", API_ORDER_CREATE, orderCreateQps);
+        log.info("[Sentinel] 网关限流已装配：{} QPS ≤ {}，{} QPS ≤ {}",
+                API_ORDER_CREATE, orderCreateQps, API_AI_CHAT, aiChatQps);
     }
 
-    /** 自定义 API 分组：精确匹配 POST /api/order/create（不打扰其他接口） */
+    /** 自定义 API 分组：精确匹配，不打扰其他接口 */
     private void initApiDefinitions() {
         ApiDefinition orderCreate = new ApiDefinition(API_ORDER_CREATE)
                 .setPredicateItems(Set.of(new ApiPathPredicateItem()
                         .setPattern("/api/order/create")
                         .setMatchStrategy(SentinelGatewayConstants.URL_MATCH_STRATEGY_EXACT)));
-        GatewayApiDefinitionManager.loadApiDefinitions(Set.of(orderCreate));
+
+        // AI 客服：普通对话与流式对话都要算进来
+        ApiDefinition aiChat = new ApiDefinition(API_AI_CHAT)
+                .setPredicateItems(Set.of(
+                        new ApiPathPredicateItem()
+                                .setPattern("/api/ai/chat")
+                                .setMatchStrategy(SentinelGatewayConstants.URL_MATCH_STRATEGY_EXACT),
+                        new ApiPathPredicateItem()
+                                .setPattern("/api/ai/chat/stream")
+                                .setMatchStrategy(SentinelGatewayConstants.URL_MATCH_STRATEGY_EXACT)));
+
+        GatewayApiDefinitionManager.loadApiDefinitions(Set.of(orderCreate, aiChat));
     }
 
-    /** 流控规则：order-create 分组 QPS ≤ orderCreateQps（快速失败，超限直接 429） */
+    /** 流控规则：分组 QPS 上限（快速失败，超限直接 429） */
     private void initGatewayRules() {
-        GatewayFlowRule rule = new GatewayFlowRule(API_ORDER_CREATE)
+        GatewayFlowRule orderRule = new GatewayFlowRule(API_ORDER_CREATE)
                 .setResourceMode(SentinelGatewayConstants.RESOURCE_MODE_CUSTOM_API_NAME)
                 .setCount(orderCreateQps)
                 .setIntervalSec(1);
-        GatewayRuleManager.loadRules(Set.of(rule));
+        GatewayFlowRule aiRule = new GatewayFlowRule(API_AI_CHAT)
+                .setResourceMode(SentinelGatewayConstants.RESOURCE_MODE_CUSTOM_API_NAME)
+                .setCount(aiChatQps)
+                .setIntervalSec(1);
+        GatewayRuleManager.loadRules(Set.of(orderRule, aiRule));
     }
 
     /** 限流响应：与全站统一响应同构的 JSON（HTTP 429） */

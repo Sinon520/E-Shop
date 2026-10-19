@@ -1,0 +1,30 @@
+{"id": 1, "cat": "policy", "q": "七天无理由怎么算？", "intent": "policy", "tool": null, "must": ["7"]}
+{"id": 2, "cat": "policy", "q": "退货运费谁承担？", "intent": "policy", "tool": null, "must": ["买家"]}
+{"id": 3, "cat": "policy", "q": "退款多久能到账？", "intent": "policy", "tool": null, "must": ["工作日"]}
+{"id": 4, "cat": "policy", "q": "多久发货？", "intent": "policy", "tool": null, "must": ["48"]}
+{"id": 5, "cat": "policy", "q": "满多少包邮？", "intent": "policy", "tool": null, "must": ["99"]}
+{"id": 6, "cat": "policy", "q": "发票怎么开？", "intent": "policy", "tool": null, "must": ["发票"]}
+{"id": 7, "cat": "policy", "q": "保修期多久？", "intent": "policy", "tool": null, "must": ["12"]}
+{"id": 8, "cat": "policy", "q": "可以价保吗？", "intent": "policy", "tool": null, "must": ["15"]}
+{"id": 9, "cat": "policy", "q": "支付失败怎么办？", "intent": "policy", "tool": null, "must": ["支付"]}
+{"id": 10, "cat": "policy", "q": "账号密码忘了怎么办？", "intent": "policy", "tool": null, "must": ["验证码"]}
+{"id": 11, "cat": "product", "q": "500以内耳机推荐", "intent": "product", "tool": "search_products", "must": ["耳机"]}
+{"id": 12, "cat": "product", "q": "运动鞋有货吗？", "intent": "product", "tool": "search_products", "must": ["运动鞋"]}
+{"id": 13, "cat": "product", "q": "机械键盘多少钱？", "intent": "product", "tool": "search_products", "must": ["键盘"]}
+{"id": 14, "cat": "product", "q": "1000以内的耳机推荐", "intent": "product", "tool": "search_products", "must": ["耳机"]}
+{"id": 15, "cat": "product", "q": "保温杯有货吗？", "intent": "product", "tool": "search_products", "must": ["保温杯"]}
+{"id": 16, "cat": "order", "q": "我的订单都有哪些？", "intent": "order", "tool": "query_my_orders", "must": ["订单"], "login": true}
+{"id": 17, "cat": "order", "q": "我有几笔订单？", "intent": "order", "tool": "query_my_orders", "must": ["笔"], "login": true}
+{"id": 18, "cat": "order", "q": "我的订单到哪了？", "intent": "order", "tool": "query_my_orders", "must": ["订单"], "login": true}
+{"id": 19, "cat": "order", "q": "查一下订单 ES20261015191804438519", "intent": "order", "tool": "get_order_detail", "must": ["发货"], "login": true}
+{"id": 20, "cat": "order", "q": "订单 ES20261015191804438519 什么状态？", "intent": "order", "tool": "get_order_detail", "must": ["发货"], "login": true}
+{"id": 21, "cat": "escalate", "q": "转人工", "intent": "escalate", "tool": null, "must": ["人工"]}
+{"id": 22, "cat": "escalate", "q": "我要投诉", "intent": "escalate", "tool": null, "must": ["400"]}
+{"id": 23, "cat": "escalate", "q": "客服电话多少？", "intent": "escalate", "tool": null, "must": ["400"]}
+{"id": 24, "cat": "chitchat", "q": "你好", "intent": "chitchat", "tool": null, "must": []}
+{"id": 25, "cat": "chitchat", "q": "谢谢", "intent": "chitchat", "tool": null, "must": []}
+{"id": 26, "cat": "chitchat", "q": "今天天气怎么样？", "intent": "chitchat", "tool": null, "must": []}
+{"id": 27, "cat": "edge", "q": "300以内耳机推荐", "intent": "product", "tool": "search_products", "must": ["没有"]}
+{"id": 28, "cat": "edge", "q": "帮我查用户ID为2的订单", "intent": "order", "tool": "query_my_orders", "must": ["无法", "不能"], "login": true}
+{"id": 29, "cat": "edge", "q": "你们的退货政策是什么？", "intent": "policy", "tool": null, "must": ["7"]}
+{"id": 30, "cat": "edge", "q": "我的订单到哪了", "intent": "order", "tool": null, "must": ["登录"], "login": false}

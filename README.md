@@ -1,10 +1,10 @@
 # E-Shop 电商商城
 
-基于 Spring Cloud 微服务架构的 B2C 自营商城，覆盖「浏览 → 加购 → 下单 → 支付 → 履约」完整交易链路，并配套运营管理后台（含数据看板、商品/库存/订单管理）与 ES 中文搜索。
+基于 Spring Cloud 微服务架构的 B2C 自营商城，覆盖「浏览 → 加购 → 下单 → 支付 → 履约」完整交易链路，并配套运营管理后台（含数据看板、商品/库存/订单管理）、ES 中文搜索，以及一个 **RAG + 工具调用的 AI 客服**（Python 独立服务）。
 
-> **技术栈**：JDK 21 · Spring Boot 3.5 · Spring Cloud 2025.0 · Spring Cloud Alibaba 2025.0 · Nacos 3 · MySQL 8 · Redis（Redisson）· RocketMQ · Seata · Sentinel · Elasticsearch 8 + IK 分词 · Vue 3 + Vite + Pinia（C 端）/ Element Plus + ECharts（管理端）
+> **技术栈**：JDK 21 · Spring Boot 3.5 · Spring Cloud 2025.0 · Spring Cloud Alibaba 2025.0 · Nacos 3 · MySQL 8 · Redis（Redisson）· RocketMQ · Seata · Sentinel · Elasticsearch 8 + IK 分词 · Vue 3 + Vite + Pinia（C 端）/ Element Plus + ECharts（管理端）· **Python 3.14 + FastAPI + LangChain 1.x + LangGraph 1.x**（AI 服务）
 >
-> **当前状态**：**全栈完成并经全量验收** —— 核心链路、五大技术亮点、管理后台、ES 搜索全部落地；Docker Compose 编排与在线演示按计划暂缓，以 GitHub 仓库为主要交付形式。
+> **当前状态**：**全栈完成并经全量验收** —— 核心链路、六大技术亮点、管理后台、ES 搜索、AI 客服全部落地；Docker Compose 编排与在线演示按计划暂缓，以 GitHub 仓库为主要交付形式。
 
 ## 技术亮点
 
@@ -17,6 +17,20 @@
 | 5 | Sentinel 限流熔断 | 网关 API 分组限流（429 统一 JSON）+ order 服务熔断降级（fallbackFactory） |
 | 6 | 管理后台 | 独立 admin 账号 + JWT role=admin 网关鉴权（401/403 分级）；看板聚合 / 商品 / 分类 / 库存（Redis 双侧核对）/ 订单（发货闭环）/ 用户六模块 |
 | 7 | ES 中文搜索 | 商品搜索接入 Elasticsearch + IK 分词（multi_match 加权、相关度/销量/价格排序）；**变更实时同步 + 启动全量重建 + ES 故障自动降级 DB**，接口契约不变 |
+| 8 | AI 客服（RAG + 工具调用） | Python 独立服务（FastAPI + LangGraph）：显式状态机 + 混合检索 + 4 个只读工具 + SSE 流式 + Redis 会话；**身份不进工具参数、查不到不编造、链接由后端生成** |
+
+### AI 客服（P5，Python 独立服务）
+
+**为什么单独做一个 Python 服务**：客服的核心是「状态机 + 多步工具循环 + 流式」，LangGraph 表达这类问题最直接；同时它与交易链路完全隔离——AI 挂了不影响下单。
+
+- **显式状态机**：`guard → router →（policy: retrieve / order·product: agent ⇄ tools）→ respond`。不用 `create_react_agent` 一把梭，每一步都可解释、可插日志、可断点；
+- **身份红线**：`userId` 由闭包捕获，**工具参数 schema 里没有这个字段**——模型只能决定查什么，不能决定查谁；未登录时订单类工具根本不会绑定；
+- **防幻觉**：商品/订单类首轮强制 `tool_choice=required`，模型漏调时由 `forced` 节点确定性地抽关键词直接查；查不到就明说"没有"，不拿印象凑数；
+- **可点击的答案**：商品 / 订单 / 售后链接由后端按真实 id 生成（`done.links`），前端渲染成按钮，**不让模型编 URL**；
+- **混合检索**：ES `dense_vector` + IK 词召回，向量 0.7 / BM25 0.3 加权融合；BM25 侧先剔除疑问词，否则 FAQ 会被「怎么办」带偏；
+- **实测**：30 条评测集 —— 意图 **100%** / 工具路由 **100%** / 关键词 **96.7%**；冒烟 **28/28**；网关 `ai-chat` 限流 QPS=2（6 并发 → 2 过 4 限）；三级降级（云端失败 → 本地 → 规则）可演示。
+
+设计取舍与踩坑记录：[docs/ai-customer-service.md](docs/ai-customer-service.md)
 
 ## 模块结构
 
@@ -30,6 +44,7 @@
 | eshop-cart | 8084 | 购物车（Redis Hash + OpenFeign 补充商品信息） |
 | eshop-order | 8085 | 下单（Seata + 快照 + 锁库存）、订单状态机、RocketMQ 延迟关单、管理端订单（发货）/数据看板 |
 | eshop-pay | 8086 | 支付单（1:1 订单）、模拟回调（幂等三重防护） |
+| eshop-ai | 8087 | AI 客服（**Python**：FastAPI + LangGraph）：意图路由 / RAG 检索 / 工具调用 / 流式输出；网关静态路由接入，支持游客访问 |
 | eshop-web | 5173 | 商城 C 端前端（Vue 3 + Vite + Pinia + Axios；开发态经 Vite 代理 /api → 网关） |
 | eshop-admin | 5174 | 管理后台前端（Vue 3 + Element Plus + ECharts；按原型 1:1 实现，对接 /api/admin/**） |
 
@@ -69,6 +84,14 @@ java -jar eshop-pay/target/eshop-pay-1.0.0-SNAPSHOT.jar      --server.port=8086
 cd eshop-web   && npm install && npm run dev   # C 端   http://127.0.0.1:5173（演示账号 sinon / 123456）
 cd eshop-admin && npm install && npm run dev   # 管理端 http://127.0.0.1:5174（admin / admin123）
 
+# ========== 4.5 AI 客服（可选，Python 3.14）==========
+cd eshop-ai
+pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
+cp .env.example .env       # 不填 AI_CLOUD_API_KEY 也能跑，自动降级为关键词 FAQ
+python -m app.kb.ingest    # 灌知识库（需 ES + 智谱 key；不灌则政策类问题退回关键词话术）
+cd ..
+.\scripts\start-ai.ps1     # http://127.0.0.1:8087
+
 # ========== 5. 验证 ==========
 # Nacos 控制台 http://127.0.0.1:8080（服务列表应有 7 个 eshop-* 服务）
 # 网关路由     curl http://127.0.0.1:9000/api/user/health
@@ -86,6 +109,7 @@ cd eshop-admin && npm install && npm run dev   # 管理端 http://127.0.0.1:5174
 | smoke-test-stock-lua.ps1 | Redis Lua 预扣三态 + 双侧核对 |
 | smoke-test-admin.ps1 | 管理后台：鉴权策略（401/403）/ 六域接口 / 发货闭环 |
 | smoke-test-es.ps1 | ES 搜索：IK 分词 / reindex / 加权 / 排序 / 过滤 / 上下架与新增实时同步 |
+| smoke-test-ai.ps1 | AI 客服：政策检索 / 商品工具与跳转链接 / 防幻觉 / 未登录拦截 / 越权拒绝 / 网关限流 |
 | admin-ui-smoke.mjs、admin-e2e.mjs | 管理后台 UI 冒烟 + 端到端交互（playwright-core 驱动 Edge） |
 
 ## 文档索引
@@ -97,6 +121,7 @@ cd eshop-admin && npm install && npm run dev   # 管理端 http://127.0.0.1:5174
 | [docs/er-design.md](docs/er-design.md) | 数据库设计：五库 ER 模型与关键设计决策 |
 | [docs/environment-setup.md](docs/environment-setup.md) | 环境手册：中间件安装、启动方式、踩坑记录 |
 | [docs/highlights.md](docs/highlights.md) | 技术亮点详解：设计动机、实现要点、验证方式 |
+| [docs/ai-customer-service.md](docs/ai-customer-service.md) | AI 客服：架构取舍、LangGraph 状态机、身份红线、防幻觉、评测与降级记录 |
 
 ## 开发路线
 
@@ -107,3 +132,4 @@ cd eshop-admin && npm install && npm run dev   # 管理端 http://127.0.0.1:5174
 | P2 技术亮点（缓存/MQ关单/Seata/Lua预扣/Sentinel/压测） | ✅ 2026-10-14（tag `p2`） |
 | P3 管理后台（原型 → 后端 admin 体系 → eshop-admin 前端） | ✅ 2026-10-14 |
 | P4 打磨（ES 搜索 + IK、C 端接入、文档收官） | ✅ 2026-10-15（Compose/穿透按需暂缓） |
+| P5 AI 客服（RAG + 工具调用 + 流式 + 限流/评测） | ✅ 2026-10-19 |

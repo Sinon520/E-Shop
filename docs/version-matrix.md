@@ -174,6 +174,38 @@ Vue 3 + Vite 5 + Pinia + Element Plus —— 具体小版本在搭前端时用 `
 
 ---
 
+## 六、P5 AI 服务（Python）版本矩阵
+
+> 2026-10-19 锁定。解释器：`C:\Users\asus\AppData\Local\Python\bin\python.exe`（Python **3.14.4**，pythonhome 已装全套）
+
+| 组件 | 版本 | 说明 |
+|---|---|---|
+| Python | 3.14.4 | 本机 pythonhome |
+| FastAPI | 0.146.0 | 接入层 |
+| Starlette | 1.9.0 | FastAPI 依赖 |
+| Uvicorn | 0.52.4 | ASGI 服务器 |
+| LangChain | 1.3.16 | **1.x 线，API 与 0.3 差异大** |
+| langchain-core | 1.6.0 | |
+| langchain-openai | 1.6.0 | 走 OpenAI 兼容协议接智谱 / DeepSeek / Ollama |
+| LangGraph | 1.2.11 | 状态机编排 |
+| langgraph-checkpoint | 4.2.0 | |
+| langgraph-checkpoint-redis | 0.5.2 | `RedisSaver` 来源 |
+| langgraph-prebuilt | 1.1.0 | `ToolNode` 来源 |
+| Pydantic | 2.13.4 | |
+| pydantic-settings | 2.15.0 | 配置读取 |
+| HTTPX | 0.28.1 | 直连 Java 服务的客户端 |
+| redis-py | 8.1.0 | |
+| elasticsearch-py | 8.19.3 | 对齐 ES 8.18 服务端 |
+
+关键纪律：
+
+- **本机不新建 venv**：直接使用 pythonhome 的 3.14.4（已装全套）；仓库提供 `requirements.txt`，他人 clone 后自建环境即可复现
+- **锁定 LangGraph 版本**：1.x 迭代快，图 API 变动会在导入期直接报错
+- **LangChain 1.x 与网上多数 0.3 教程写法不同**：`create_react_agent` 已移至 `langchain_classic`，新入口是 `langchain.agents.create_agent`——本项目走显式建图，不受影响
+- **pip 源现状**：两个配置文件共存——`C:\Users\asus\pip\pip.ini`（清华，2024 年旧文件）与 `C:\Users\asus\AppData\Roaming\pip\pip.ini`（阿里云，标准用户级路径）。**实际生效的是阿里云**（`pip config get global.index-url` 已验证）；若某次解析异常，可显式加 `-i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com` 覆盖
+
+---
+
 ## 附：信息来源（2026-10-14 查询）
 
 - SCA 官方版本说明（2025.x）：https://sca.aliyun.com/docs/2025.x/overview/version-explain
